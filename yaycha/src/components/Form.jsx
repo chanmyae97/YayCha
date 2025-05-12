@@ -1,11 +1,10 @@
 import { useRef, useContext } from "react";
 
+import { Box, TextField, Button } from "@mui/material";
 import { AppContext } from "../ThemedApp";
 
 export default function Form({ add }) {
-  const { mode } = useContext(AppContext);
-  const contentRef = useRef();
-  const nameRef = useRef();
+  const contenRef = useRef();
   return (
     <form
       onSubmit={(e) => {
@@ -17,48 +16,23 @@ export default function Form({ add }) {
           return;
         }
 
-        add(content, name);
+        add(content, "Alice");
         e.currentTarget.reset();
       }}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 3,
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 20,
-        background: mode === "dark" ? "#555" : "#def",
-      }}
     >
-      <input
-        ref={contentRef}
-        type="text"
-        placeholder="Content"
-        required
-        style={{
-          padding: 5,
-        }}
-      />
-      <input
-        ref={nameRef}
-        type="text"
-        placeholder="Name"
-        required
-        style={{
-          padding: 5,
-        }}
-      />
-      <button
-        type="submit"
-        style={{
-          padding: 8,
-          background: "#0d6efd",
-          color: "white",
-          border: "0 none",
-        }}
-      >
-        Post
-      </button>
+      <Box sx={{ mb: 4, textAlign: "right" }}>
+        <TextField
+          inputRef={contenRef}
+          type="text"
+          placeholder="Content"
+          fullWidth
+          multiline
+          sx={{ mb: 1 }}
+        />
+        <Button variant="contained" type="submit">
+          Post
+        </Button>
+      </Box>
     </form>
   );
 }

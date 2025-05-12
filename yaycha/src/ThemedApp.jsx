@@ -17,7 +17,7 @@ export function useApp() {
 }
 
 export default function ThemedApp() {
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(true);
 
   return (
     <ThemeProvider theme={theme}>
