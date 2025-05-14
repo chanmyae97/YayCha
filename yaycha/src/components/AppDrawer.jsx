@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import {
   Box,
   Drawer,
@@ -25,6 +27,7 @@ import { useApp } from "../ThemedApp";
 
 export default function AppDrawer() {
   const { showDrawer, setShowDrawer, auth, setAuth } = useApp();
+  const navigate = useNavigate();
   return (
     <div>
       <Drawer open={showDrawer} onClose={() => setShowDrawer(false)}>
@@ -61,7 +64,7 @@ export default function AppDrawer() {
         </Box>
         <List>
           <ListItem>
-            <ListItemButton>
+            <ListItemButton onClick={() => navigate("/")}>
               <ListItemIcon>
                 <HomeIcon />
               </ListItemIcon>
@@ -73,7 +76,7 @@ export default function AppDrawer() {
           {auth && (
             <>
               <ListItem>
-                <ListItemButton>
+                <ListItemButton onClick={() => navigate("/profile/1")}>
                   <ListItemIcon>
                     <ProfileIcon />
                   </ListItemIcon>
@@ -94,21 +97,21 @@ export default function AppDrawer() {
           {!auth && (
             <>
               <ListItem>
-                <ListItemButton>
+                <ListItemButton onClick={() => navigate("/register")}>
                   <ListItemIcon>
                     <RegisterIcon />
                   </ListItemIcon>
                   <ListItemText>Register</ListItemText>
                 </ListItemButton>
               </ListItem>
-              <ListItemButton>
-                <ListItemButton onClick={() => setAuth(true)}>
+              <ListItem>
+                <ListItemButton onClick={() => navigate("/login")}>
                   <ListItemIcon>
                     <LoginIcon />
                   </ListItemIcon>
                   <ListItemText>Login</ListItemText>
                 </ListItemButton>
-              </ListItemButton>
+              </ListItem>
             </>
           )}
         </List>
