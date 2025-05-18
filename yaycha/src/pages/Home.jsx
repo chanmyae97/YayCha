@@ -1,39 +1,38 @@
-import { useState, useEffect } from "react";
-
 import { Alert, Box } from "@mui/material";
 
 import Form from "../components/Form";
 import Item from "../components/Item";
 
 import { useApp } from "../ThemedApp";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "../ThemedApp";
+
+const api = import.meta.env.VITE_API;
 
 export default function Home() {
   const { showForm, setShowForm, setGlobalMsg } = useApp();
+  const { isLoading, isError, error, data } = useQuery({
+    queryKey: ["posts"],
+    queryFn: async () => {
+      const res = await fetch(`${api}/content/posts`);
+      return res.json();
+    },
+  });
 
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    const api = import.meta.env.VITE_API;
-    fetch(`${api}/content/posts`)
-      .then(async (res) => {
-        if (res.ok) {
-          setData(await res.json());
-          setLoading(false);
-        } else {
-          setError(true);
-        }
-      })
-      .catch(() => {
-        setError(true);
+  const remove = useMutation({
+    mutationFn: async (id) => {
+      await fetch(`${api}/content/posts/${id}`, {
+        method: "DELETE",
       });
-  }, []);
-
-  const remove = (id) => {
-    setData(data.filter((item) => item.id !== id));
-    setGlobalMsg("An item deleted");
-  };
+    },
+    onMutate: (id) => {
+      queryClient.cancelQueries({ queryKey: ["posts"] });
+      queryClient.setQueryData(["posts"], (old) =>
+        old.filter((item) => item.id !== id)
+      );
+      setGlobalMsg("A post deleted");
+    },
+  });
 
   const add = (content, name) => {
     const id = data[0].id + 1;
@@ -41,22 +40,22 @@ export default function Home() {
     setGlobalMsg("An item added");
   };
 
-  if (error) {
+  if (isError) {
     return (
       <Box>
-        <Alert severity="warning">Cannot fetch data</Alert>
+        <Alert severity="warning">{error.message}</Alert>
       </Box>
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return <Box sx={{ textAlign: "center" }}>Loading...</Box>;
   }
   return (
     <Box>
       {showForm && <Form add={add} />}
       {data.map((item) => {
-        return <Item key={item.id} item={item} remove={remove} />;
+        return <Item key={item.id} item={item} remove={remove.mutate} />;
       })}
     </Box>
   );
