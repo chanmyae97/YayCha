@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-import { Box } from "@mui/material";
+import { Alert, Box } from "@mui/material";
 
 import Form from "../components/Form";
 import Item from "../components/Item";
@@ -11,12 +11,23 @@ export default function Home() {
   const { showForm, setShowForm, setGlobalMsg } = useApp();
 
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const api = import.meta.env.VITE_API;
-    fetch(`${api}/content/posts`).then(async (res) => {
-      setData(await res.json());
-    });
+    fetch(`${api}/content/posts`)
+      .then(async (res) => {
+        if (res.ok) {
+          setData(await res.json());
+          setLoading(false);
+        } else {
+          setError(true);
+        }
+      })
+      .catch(() => {
+        setError(true);
+      });
   }, []);
 
   const remove = (id) => {
@@ -30,6 +41,17 @@ export default function Home() {
     setGlobalMsg("An item added");
   };
 
+  if (error) {
+    return (
+      <Box>
+        <Alert severity="warning">Cannot fetch data</Alert>
+      </Box>
+    );
+  }
+
+  if (loading) {
+    return <Box sx={{ textAlign: "center" }}>Loading...</Box>;
+  }
   return (
     <Box>
       {showForm && <Form add={add} />}
