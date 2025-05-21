@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require("../prismaClient");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const {auth} = require("../middlewares/auth");
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
