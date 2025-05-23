@@ -1,4 +1,4 @@
-import { useContext, createContext, useState, useMemo } from "react";
+import { useContext, createContext, useState, useMemo, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 //mui export
@@ -15,6 +15,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import AppDrawer from "./components/AppDrawer";
 import App from "./App";
+import { fetchVerify } from "./libs/fetcher";
 
 //Routes
 
@@ -84,6 +85,12 @@ export default function ThemedApp() {
       },
     });
   }, [mode]);
+
+  useEffect(() => {
+    fetchVerify().then((user) => {
+      if (user) setAuth(user);
+    });
+  }, []);
 
   return (
     <ThemeProvider theme={theme}>

@@ -1,31 +1,52 @@
 import { Box, Button, TextField, Alert } from "@mui/material";
+import { useRef } from "react";
 
 import Item from "../components/Item";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "../ThemedApp";
 import { useApp } from "../ThemedApp";
+import { postComment } from "../libs/fetcher";
 
 const api = import.meta.env.VITE_API;
 
 export default function Comments() {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const { setGlobalMsg } = useApp();
+  const contentInput = useRef();
+  const { setGlobalMsg, auth } = useApp();
 
   const { isLoading, isError, error, data } = useQuery({
-    queryKey: ["comments"],
+    queryKey: ["comments", id],
     queryFn: async () => {
       const res = await fetch(`${api}/content/posts/${id}`);
       return res.json();
     },
   });
 
+  const addComment = useMutation({
+    mutationFn: async (content) => {
+      const comment = await postComment(content, id);
+      return comment;
+    },
+    onSuccess: async (comment) => {
+      queryClient.cancelQueries({ queryKey: ["comments", id] });
+      queryClient.setQueryData(["comments", id], (old) => ({
+        ...old,
+        comments: [comment, ...(old?.comments || [])],
+      }));
+      setGlobalMsg("Comment added");
+    },
+  });
+
   const removePost = useMutation({
     mutationFn: async (id) => {
+      const token = localStorage.getItem("token");
       await fetch(`${api}/content/posts/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       navigate("/");
       setGlobalMsg("A post deleted");
@@ -34,20 +55,21 @@ export default function Comments() {
 
   const removeComment = useMutation({
     mutationFn: async (id) => {
+      const token = localStorage.getItem("token");
       await fetch(`${api}/content/comments/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
     },
-    onMutate: (id) => {
-      queryClient.cancelQueries({ queryKey: ["comments"] });
-      queryClient.setQueryData(["comments"], (old) => {
-        if (!old || !old.comments) return old;
-        return {
-          ...old,
-          comments: old.comments.filter((comment) => comment.id !== id),
-        };
-      });
+    onSuccess: () => {
+      // Invalidate and refetch the comments
+      queryClient.invalidateQueries(["comments", id]);
       setGlobalMsg("A comment deleted");
+    },
+    onError: (error) => {
+      setGlobalMsg(error.message || "Failed to delete comment");
     },
   });
 
@@ -63,23 +85,24 @@ export default function Comments() {
     return <Box sx={{ textAlign: "center" }}>Loading...</Box>;
   }
 
-  if (!data || !data.comments) {
-    return <Box sx={{ textAlign: "center" }}>No comments found</Box>;
+  if (!data) {
+    return <Box sx={{ textAlign: "center" }}>Post not found</Box>;
   }
 
   return (
     <Box>
       <Item
         primary
-        key={1}
+        key={data.id}
         item={{
-          id: 1,
-          content: "Initial post content from Alice",
-          name: "Alice",
+          id: data.id,
+          content: data.content,
+          created: data.created,
+          user: data.user,
         }}
         remove={removePost.mutate}
       />
-      {data.comments.map((comment) => (
+      {data.comments?.map((comment) => (
         <Item
           key={comment.id}
           item={comment}
@@ -88,14 +111,28 @@ export default function Comments() {
         />
       ))}
 
-      <form>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 3 }}>
-          <TextField multiline placeholder="Your Comment" />
-          <Button type="submit" variant="contained">
-            Reply
-          </Button>
-        </Box>
-      </form>
+      {auth && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const content = contentInput.current.value;
+            if (!content) return;
+            addComment.mutate(content);
+            e.currentTarget.reset();
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 3 }}>
+            <TextField
+              inputRef={contentInput}
+              multiline
+              placeholder="Your Comment"
+            />
+            <Button type="submit" variant="contained">
+              Reply
+            </Button>
+          </Box>
+        </form>
+      )}
     </Box>
   );
 }

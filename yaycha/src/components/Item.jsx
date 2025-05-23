@@ -16,19 +16,26 @@ import {
 import { green } from "@mui/material/colors";
 import { useNavigate } from "react-router-dom";
 
-import { formatRelative } from "date-fns";
+import { formatRelative, isValid } from "date-fns";
 
 export default function Item({ item, remove, primary, comment }) {
   const navigate = useNavigate();
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Unknown date";
+    const date = new Date(dateString);
+    return isValid(date) ? formatRelative(date, new Date()) : "Invalid date";
+  };
+
   return (
     <Card sx={{ mb: 2 }}>
       {primary && <Box sx={{ height: 50, bgcolor: green[500] }} />}
       <CardContent
         onClick={() => {
           if (comment) return false;
-          navigate("/comments/1");
+          navigate(`/comments/${item.id}`);
         }}
-        sx={{ cursor: "pointer" }}
+        sx={{ cursor: comment ? "default" : "pointer" }}
       >
         <Box
           sx={{
@@ -47,7 +54,7 @@ export default function Item({ item, remove, primary, comment }) {
           >
             <TimeIcon fontSize="10" color="success" />
             <Typography variant="caption" sx={{ color: green[500] }}>
-              {formatRelative(item.created, new Date())}
+              {formatDate(item.created)}
             </Typography>
           </Box>
           <IconButton
@@ -65,18 +72,23 @@ export default function Item({ item, remove, primary, comment }) {
         <Typography sx={{ my: 3 }}>{item.content}</Typography>
         <Box
           onClick={(e) => {
-            navigate(`/profile/${item.user.id}`);
-            e.stopPropagation();
+            if (item.user?.id) {
+              navigate(`/profile/${item.user.id}`);
+              e.stopPropagation();
+            }
           }}
           sx={{
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
             gap: 1,
+            cursor: item.user?.id ? "pointer" : "default",
           }}
         >
           <UserIcon fontSize="12" color="info" />
-          <Typography variant="caption">{item.user.name}</Typography>
+          <Typography variant="caption">
+            {item.user?.name || "Unknown User"}
+          </Typography>
         </Box>
       </CardContent>
     </Card>

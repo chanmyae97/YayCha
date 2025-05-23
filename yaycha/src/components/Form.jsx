@@ -4,25 +4,20 @@ import { Box, TextField, Button } from "@mui/material";
 import { AppContext } from "../ThemedApp";
 
 export default function Form({ add }) {
-  const contenRef = useRef();
+  const contentRef = useRef();
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         const content = contentRef.current.value;
-        const name = nameRef.current.value;
 
-        if (!content.trim() || !name.trim()) {
-          return;
-        }
-
-        add(content, "Alice");
+        add.mutate(content);
         e.currentTarget.reset();
       }}
     >
       <Box sx={{ mb: 4, textAlign: "right" }}>
         <TextField
-          inputRef={contenRef}
+          inputRef={contentRef}
           type="text"
           placeholder="Content"
           fullWidth

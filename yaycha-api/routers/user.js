@@ -116,4 +116,9 @@ router.post("/users", async (req, res) => {
     }
 });
 
+router.get("/verify", auth, async (req,res) =>{
+    const user = res.locals.user;
+    res.json(user);
+})
+
 module.exports = { userRouter: router };
