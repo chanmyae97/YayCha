@@ -15,11 +15,13 @@ import {
 
 import { green } from "@mui/material/colors";
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../ThemedApp";
 
 import { formatRelative, isValid } from "date-fns";
 
 export default function Item({ item, remove, primary, comment }) {
   const navigate = useNavigate();
+  const { auth } = useApp();
 
   const formatDate = (dateString) => {
     if (!dateString) return "Unknown date";
@@ -57,16 +59,18 @@ export default function Item({ item, remove, primary, comment }) {
               {formatDate(item.created)}
             </Typography>
           </Box>
-          <IconButton
-            sx={{ color: "text.fade" }}
-            size="small"
-            onClick={(e) => {
-              remove(item.id);
-              e.stopPropagation();
-            }}
-          >
-            <DeleteIIcon fontSize="inherit" />
-          </IconButton>
+          {auth && auth.id === item.user?.id && (
+            <IconButton
+              sx={{ color: "text.fade" }}
+              size="small"
+              onClick={(e) => {
+                remove(item.id);
+                e.stopPropagation();
+              }}
+            >
+              <DeleteIIcon fontSize="inherit" />
+            </IconButton>
+          )}
         </Box>
 
         <Typography sx={{ my: 3 }}>{item.content}</Typography>

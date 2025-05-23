@@ -22,15 +22,16 @@ export default function Home() {
 
   const remove = useMutation({
     mutationFn: async (id) => {
+      const token = localStorage.getItem("token");
       await fetch(`${api}/content/posts/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
     },
-    onMutate: (id) => {
-      queryClient.cancelQueries({ queryKey: ["posts"] });
-      queryClient.setQueryData(["posts"], (old) =>
-        old.filter((item) => item.id !== id)
-      );
+    onSuccess: () => {
+      queryClient.invalidateQueries(["posts"]);
       setGlobalMsg("A post deleted");
     },
   });
@@ -61,10 +62,9 @@ export default function Home() {
   return (
     <Box>
       {showForm && auth && <Form add={add} />}
-      {data &&
-        data.map((item) => {
-          return <Item key={item.id} item={item} remove={remove.mutate} />;
-        })}
+      {data.map((item) => {
+        return <Item key={item.id} item={item} remove={remove.mutate} />;
+      })}
     </Box>
   );
 }
