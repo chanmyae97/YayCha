@@ -1,4 +1,4 @@
-const {auth, isOwner} = require("../middlewares/auth");
+const { auth, isOwner } = require("../middlewares/auth");
 
 const express = require("express");
 const router = express.Router();
@@ -11,14 +11,13 @@ router.get("/posts", async (req, res) => {
       include: {
         user: true,
         comments: true,
+        likes: true,
       },
       orderBy: { id: "desc" },
       take: 20,
     });
 
-    setTimeout(() => {
-      res.json(data);
-    }, 2000);
+    res.json(data);
   } catch (e) {
     res.status(500).json({ error: e });
   }
@@ -34,18 +33,81 @@ router.get("/posts/:id", async (req, res) => {
         user: true,
         comments: {
           include: {
-            user: true
-          }
-        }
+            user: true,
+            likes: true,
+          },
+        },
+        likes: true,
       },
-      orderBy: { id: "desc" },
-      take: 20,
     });
 
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e });
   }
+});
+
+router.get("/likes/posts/:id", async (req, res) => {
+  const { id } = req.params;
+
+  const data = await prisma.postLike.findMany({
+    where: {
+      postId: Number(id),
+    },
+    include: {
+      user: {
+        include: {
+          followers: true,
+          following: true,
+        },
+      },
+    },
+  });
+
+  res.json(data);
+});
+
+// using omit for decodeing password
+// router.get("/likes/posts/:id", async (req, res) => {
+//   const { id } = req.params;
+
+//   const data = await prisma.postLike.findMany({
+//     where: {
+//       postId: Number(id),
+//     },
+//     include: {
+//       user: {
+//         select: {
+//           id: true,
+//           name: true,
+//           username: true,
+//           bio: true,
+//           followers: true,
+//           following: true,
+//         },
+//       },
+//     },
+//   });
+
+//   res.json(data);
+// });
+
+router.get("/likes/comments/:id", async (req, res) => {
+  const { id } = req.params;
+  const data = await prisma.commentLike.findMany({
+    where: {
+      commentId: Number(id),
+    },
+    include: {
+      user: {
+        include: {
+          followers: true,
+          following: true,
+        },
+      },
+    },
+  });
+  res.json(data);
 });
 
 router.delete("/posts/:id", auth, isOwner("post"), async (req, res) => {
@@ -62,7 +124,7 @@ router.delete("/posts/:id", auth, isOwner("post"), async (req, res) => {
   res.sendStatus(204);
 });
 
-router.delete("/comments/:id",auth, isOwner("comment"), async (req, res) => {
+router.delete("/comments/:id", auth, isOwner("comment"), async (req, res) => {
   const { id } = req.params;
 
   await prisma.comment.delete({
@@ -72,11 +134,11 @@ router.delete("/comments/:id",auth, isOwner("comment"), async (req, res) => {
   res.sendStatus(204);
 });
 
-router.post("/posts", auth, async(req, res) => {
-  const {content} = req.body;
+router.post("/posts", auth, async (req, res) => {
+  const { content } = req.body;
 
-  if(!content) {
-    return res.status(400).json({msg: "content required"});
+  if (!content) {
+    return res.status(400).json({ msg: "content required" });
   }
 
   const user = res.locals.user;
@@ -84,27 +146,27 @@ router.post("/posts", auth, async(req, res) => {
   const post = await prisma.post.create({
     data: {
       content,
-      userId:  user.id,
+      userId: user.id,
     },
   });
 
   const data = await prisma.post.findUnique({
-    where: {id : Number(post.id)},
+    where: { id: Number(post.id) },
     include: {
-      user :true,
+      user: true,
       comments: {
-        include: {user: true},
+        include: { user: true },
       },
     },
   });
   res.json(data);
 });
 
-router.post("/comments", auth, async(req,res) =>{
-  const {content, postId} = req.body;
-  if(!content || !postId){
-    return 
-      res.status(400).json({ msg: "content and postId required"});
+router.post("/comments", auth, async (req, res) => {
+  const { content, postId } = req.body;
+  if (!content || !postId) {
+    return;
+    res.status(400).json({ msg: "content and postId required" });
   }
 
   const user = res.locals.user;
@@ -120,6 +182,61 @@ router.post("/comments", auth, async(req,res) =>{
   comment.user = user;
 
   res.json(comment);
-})
+});
+
+router.post("/like/posts/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  const user = res.locals.user;
+
+  const like = await prisma.postLike.create({
+    data: {
+      postId: Number(id),
+      userId: Number(user.id),
+    },
+  });
+  res.json({ like });
+});
+
+router.post("/unlike/posts/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  const user = res.locals.user;
+
+  await prisma.postLike.deleteMany({
+    where: {
+      postId: Number(id),
+      userId: Number(user.id),
+    },
+  });
+
+  res.json({ msg: `Unlike post ${id}` });
+});
+
+router.post("/like/comments/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  const user = res.locals.user;
+
+  const like = await prisma.commentLike.create({
+    data: {
+      commentId: Number(id),
+      userId: Number(user.id),
+    },
+  });
+
+  res.json({ like });
+});
+
+router.post("/unlike/comments/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  const user = res.locals.user;
+
+  await prisma.commentLike.deleteMany({
+    where: {
+      commentId: Number(id),
+      userId: Number(user.id),
+    },
+  });
+
+  res.json({ msg: `Unlike comment ${id}` });
+});
 
 module.exports = { contentRouter: router };
