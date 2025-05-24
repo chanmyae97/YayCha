@@ -16,6 +16,8 @@ import {
 import { green } from "@mui/material/colors";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../ThemedApp";
+import LikeButton from "./LikeButton";
+import CommentButton from "./CommentButton";
 
 import { formatRelative, isValid } from "date-fns";
 
@@ -68,31 +70,44 @@ export default function Item({ item, remove, primary, comment }) {
                 e.stopPropagation();
               }}
             >
-              <DeleteIIcon fontSize="inherit" />
+              <DeleteIIcon fontSize="inherit" color="inherit" />
             </IconButton>
           )}
         </Box>
 
         <Typography sx={{ my: 3 }}>{item.content}</Typography>
         <Box
-          onClick={(e) => {
-            if (item.user?.id) {
-              navigate(`/profile/${item.user.id}`);
-              e.stopPropagation();
-            }
-          }}
           sx={{
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
-            gap: 1,
-            cursor: item.user?.id ? "pointer" : "default",
+            justifyContent: "space-between",
           }}
         >
-          <UserIcon fontSize="12" color="info" />
-          <Typography variant="caption">
-            {item.user?.name || "Unknown User"}
-          </Typography>
+          <Box
+            onClick={(e) => {
+              if (item.user?.id) {
+                navigate(`/profile/${item.user.id}`);
+                e.stopPropagation();
+              }
+            }}
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 1,
+              cursor: item.user?.id ? "pointer" : "default",
+            }}
+          >
+            <UserIcon fontSize="12" color="info" />
+            <Typography variant="caption">
+              {item.user?.name || "Unknown User"}
+            </Typography>
+          </Box>
+          <Box>
+            <LikeButton item={item} comment={comment} />
+            <CommentButton item={item} comment={comment} />
+          </Box>
         </Box>
       </CardContent>
     </Card>

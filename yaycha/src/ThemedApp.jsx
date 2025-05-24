@@ -59,7 +59,7 @@ const router = createBrowserRouter([
         element: <Profile />,
       },
       {
-        path: "/likes/:id",
+        path: "/likes/:id/:type",
         element: <Likes />,
       },
     ],

@@ -77,11 +77,11 @@ export default function LikeButton({ item, comment }) {
         <IconButton
           size="small"
           onClick={(e) => {
-            comment ? likeComment.mutate(item.id) : likePost.mute(item.id);
+            comment ? likeComment.mutate(item.id) : likePost.mutate(item.id);
             e.stopPropagation();
           }}
         >
-          <LikedIcon fontSize="small" color="error" />
+          <LikeIcon fontSize="small" color="error" />
         </IconButton>
       )}
       <Button
