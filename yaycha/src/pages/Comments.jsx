@@ -6,7 +6,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "../ThemedApp";
 import { useApp } from "../ThemedApp";
-import { postComment } from "../libs/fetcher";
+import {
+  postComment,
+  deleteComment,
+  deletePost,
+  fetchComments,
+} from "../libs/fetcher";
 
 const api = import.meta.env.VITE_API;
 
@@ -19,8 +24,7 @@ export default function Comments() {
   const { isLoading, isError, error, data } = useQuery({
     queryKey: ["comments", id],
     queryFn: async () => {
-      const res = await fetch(`${api}/content/posts/${id}`);
-      return res.json();
+      return fetchComments(id);
     },
   });
 
@@ -41,13 +45,10 @@ export default function Comments() {
 
   const removePost = useMutation({
     mutationFn: async (id) => {
-      const token = localStorage.getItem("token");
-      await fetch(`${api}/content/posts/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      return deletePost(id);
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["posts"] });
       navigate("/");
       setGlobalMsg("A post deleted");
     },
@@ -55,21 +56,16 @@ export default function Comments() {
 
   const removeComment = useMutation({
     mutationFn: async (id) => {
-      const token = localStorage.getItem("token");
-      await fetch(`${api}/content/comments/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      return deleteComment(id);
     },
     onSuccess: () => {
       // Invalidate and refetch the comments
-      queryClient.invalidateQueries(["comments", id]);
+      queryClient.cancelQueries({ queryKey: ["comments"] });
+      queryClient.setQueriesData("comments", (old) => {
+        old.comment = old.comments.filter((comment) => comment.id !== id);
+        return { ...old };
+      });
       setGlobalMsg("A comment deleted");
-    },
-    onError: (error) => {
-      setGlobalMsg(error.message || "Failed to delete comment");
     },
   });
 

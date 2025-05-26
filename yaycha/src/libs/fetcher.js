@@ -4,6 +4,16 @@ function getToken() {
   return localStorage.getItem("token");
 }
 
+export async function fetchPosts() {
+  const res = await fetch(`${api}/content/posts`);
+  return res.json();
+}
+
+export async function fetchComments(id) {
+  const res = await fetch(`${api}/content/posts/${id}`);
+  return res.json();
+}
+
 export async function fetchVerify() {
   const token = getToken();
   const res = await fetch(`${api}/verify`, {
@@ -92,6 +102,29 @@ export async function fetchUser(id) {
   });
 
   return res.json();
+}
+
+export async function deletePost(id) {
+  const token = getToken();
+  const res = await fetch(`${api}/content/posts/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.text();
+}
+
+export async function deleteComment(id) {
+  const token = getToken();
+  const res = await fetch(`${api}/content/comments/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.text();
 }
 
 export async function postPostLike(id) {
@@ -187,7 +220,7 @@ export async function fetchSearch(q) {
 
 export async function fetchFollowingPosts() {
   const token = getToken();
-  const res = await fetch(`${api}/content/following/posts`,{
+  const res = await fetch(`${api}/content/following/posts`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

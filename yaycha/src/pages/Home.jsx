@@ -7,32 +7,38 @@ import Item from "../components/Item";
 
 import { useApp, queryClient } from "../ThemedApp";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { postPost } from "../libs/fetcher";
+import {
+  postPost,
+  deletePost,
+  fetchPosts,
+  fetchFollowingPosts,
+} from "../libs/fetcher";
 
 const api = import.meta.env.VITE_API;
 
 export default function Home() {
+  const [showLastest, setShowLatest] = useState(true);
   const { showForm, setShowForm, setGlobalMsg, auth } = useApp();
   const { isLoading, isError, error, data } = useQuery({
-    queryKey: ["posts"],
-    queryFn: async () => {
-      const res = await fetch(`${api}/content/posts`);
-      return res.json();
+    queryKey: ["posts", showLastest],
+    queryFn: () => {
+      if (showLastest) {
+        return fetchPosts();
+      } else {
+        return fetchFollowingPosts();
+      }
     },
   });
 
   const remove = useMutation({
     mutationFn: async (id) => {
-      const token = localStorage.getItem("token");
-      await fetch(`${api}/content/posts/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      return await deletePost(id);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["posts"]);
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+      await queryClient.setQueriesData(["posts", showLastest], (old) => {
+        old.filter((item) => item.id !== id);
+      });
       setGlobalMsg("A post deleted");
     },
   });
@@ -43,7 +49,7 @@ export default function Home() {
       return post;
     },
     onSuccess: async (post) => {
-      queryClient.cancelQueries({ queryKey: ["posts"] });
+      queryClient.cancelQueries({ queryKey: ["posts", showLastest] });
       queryClient.setQueryData(["posts"], (old) => [post, ...old]);
       setGlobalMsg("A post added");
     },
@@ -63,6 +69,24 @@ export default function Home() {
   return (
     <Box>
       {showForm && auth && <Form add={add} />}
+      {auth && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            mb: 1,
+          }}
+        >
+          <Button disabled={showLastest} onClick={() => setShowLatest(true)}>
+            Latest
+          </Button>
+          <Typography sx={{ color: "text.fade", fontSize: 15 }}>|</Typography>
+          <Button disabled={!showLastest} onClick={() => setShowLatest(false)}>
+            Following
+          </Button>
+        </Box>
+      )}
       {data.map((item) => {
         return <Item key={item.id} item={item} remove={remove.mutate} />;
       })}
