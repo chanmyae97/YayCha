@@ -24,7 +24,7 @@ export default function FollowButton({ user }) {
   });
   const unfollow = useMutation({
     mutationFn: (id) => {
-      return deleteFollow();
+      return deleteFollow(id);
     },
     onSuccess: async () => {
       await queryClient.refetchQueries(["users"]);

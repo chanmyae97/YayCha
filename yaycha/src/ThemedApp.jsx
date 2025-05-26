@@ -26,6 +26,7 @@ import Register from "./pages/Register";
 import Likes from "./pages/Likes";
 import Profile from "./pages/Profile";
 import Comments from "./pages/Comments";
+import Search from "./pages/Search";
 
 export const AppContext = createContext();
 
@@ -61,6 +62,10 @@ const router = createBrowserRouter([
       {
         path: "/likes/:id/:type",
         element: <Likes />,
+      },
+      {
+        path: "/search",
+        element: <Search />,
       },
     ],
   },

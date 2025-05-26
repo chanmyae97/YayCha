@@ -7,7 +7,10 @@ import {
   ListItemAvatar,
   ListItemText,
   ListItemButton,
+  ListItemSecondaryAction,
 } from "@mui/material";
+
+import FollowButton from "./FollowButton";
 
 import { useNavigate } from "react-router-dom";
 
@@ -34,6 +37,9 @@ export default function UserList({ title, data }) {
                   primary={item.user.name}
                   secondary={item.user.bio}
                 />
+                <ListItemSecondaryAction>
+                  <FollowButton user={item.user} />
+                </ListItemSecondaryAction>
               </ListItemButton>
             </ListItem>
           );

@@ -9,6 +9,7 @@ import Item from "../components/Item";
 import Form from "../components/Form";
 import { postPost } from "../libs/fetcher";
 import { useApp } from "../ThemedApp";
+import FollowButton from "../components/FollowButton";
 
 const api = import.meta.env.VITE_API;
 
@@ -84,6 +85,11 @@ export default function Profile() {
             {data.bio}
           </Typography>
         </Box>
+        {auth && auth.id !== Number(id) && (
+          <Box sx={{ mt: 1 }}>
+            <FollowButton user={data} />
+          </Box>
+        )}
       </Box>
       <Box>
         {auth && auth.id === Number(id) && <Form add={add} />}

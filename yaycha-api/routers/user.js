@@ -86,6 +86,25 @@ router.get("/users/:id", auth, async (req, res) => {
   }
 });
 
+router.get("/search",async (req,res) =>{
+  const {q} = req.query;
+
+  const data = await prisma.user.findMany({
+    where:{
+      name: {
+        contains: q,
+      },
+    },
+    include: {
+      followers: true,
+      following: true,
+    },
+    take: 20,
+  });
+
+  res.json(data);
+})
+
 router.post("/users", async (req, res) => {
   try {
     console.log("Request body:", req.body);
@@ -145,7 +164,7 @@ router.delete("/unfollow/:id", auth, async (req, res) => {
 
   await prisma.follow.deleteMany({
     where: {
-      followId: Number(user.id),
+      followerId: Number(user.id),
       followingId: Number(id),
     },
   });
