@@ -110,16 +110,16 @@ router.get("/likes/comments/:id", async (req, res) => {
   res.json(data);
 });
 
-router.get("/following/posts", auth, async (req,res) => {
+router.get("/following/posts", auth, async (req, res) => {
   const user = res.locals.user;
 
   const follow = await prisma.follow.findMany({
-    where:{
+    where: {
       followerId: Number(user.id),
     },
   });
 
-  const users = follow.map(item => item.followingId);
+  const users = follow.map((item) => item.followingId);
 
   const data = await prisma.post.findMany({
     where: {
@@ -132,11 +132,51 @@ router.get("/following/posts", auth, async (req,res) => {
       comments: true,
       likes: true,
     },
-    orderBy: {id: "desc"},
+    orderBy: { id: "desc" },
     take: 20,
   });
 
   res.json(data);
+});
+
+router.get("/notis", auth, async (req, res) => {
+  const user = res.locals.user;
+  const notis = await prisma.noti.findMany({
+    where: {
+      post: {
+        userId: Number(user.id),
+      },
+    },
+    include: { user: true },
+    orderBy: { id: "desc" },
+    take: 20,
+  });
+
+  res.json(notis);
+});
+
+router.put("/notis/read", auth, async (req, res) => {
+  const user = res.locals.user;
+  await prisma.noti.updateMany({
+    where: {
+      post: {
+        userId: Number(user.id),
+      },
+    },
+    data: { read: true },
+  });
+
+  res.json({ msg: "Marked all notis read" });
+});
+
+router.put("/notis/read/:id", auth, async (req, res) => {
+  const { id } = req.params;
+
+  const noti = await prisma.noti.update({
+    where: { id: Number(id) },
+    data: { read: true },
+  });
+  res.json(noti);
 });
 
 router.delete("/posts/:id", auth, isOwner("post"), async (req, res) => {
