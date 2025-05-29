@@ -234,8 +234,7 @@ router.post("/posts", auth, async (req, res) => {
 router.post("/comments", auth, async (req, res) => {
   const { content, postId } = req.body;
   if (!content || !postId) {
-    return;
-    res.status(400).json({ msg: "content and postId required" });
+    return res.status(400).json({ msg: "content and postId required" });
   }
 
   const user = res.locals.user;
@@ -246,6 +245,13 @@ router.post("/comments", auth, async (req, res) => {
       userId: Number(user.id),
       postId: Number(postId),
     },
+  });
+
+  await addNoti({
+    type: "comment",
+    content: "reply your post",
+    postId,
+    userId: user.id,
   });
 
   comment.user = user;
@@ -263,6 +269,14 @@ router.post("/like/posts/:id", auth, async (req, res) => {
       userId: Number(user.id),
     },
   });
+
+  await addNoti({
+    type: "like",
+    content: "likes your post",
+    postId: id,
+    userId: user.id,
+  });
+
   res.json({ like });
 });
 
@@ -291,6 +305,13 @@ router.post("/like/comments/:id", auth, async (req, res) => {
     },
   });
 
+  await addNoti({
+    type: "like",
+    content: "likes your comment",
+    postId: id,
+    userId: user.id,
+  });
+
   res.json({ like });
 });
 
@@ -307,5 +328,24 @@ router.delete("/unlike/comments/:id", auth, async (req, res) => {
 
   res.json({ msg: `Unlike comment ${id}` });
 });
+
+async function addNoti({ type, content, postId, userId }) {
+  const post = await prisma.post.findUnique({
+    where: {
+      id: Number(postId),
+    },
+  });
+
+  if (post.userId == userId) return false;
+
+  return await prisma.noti.create({
+    data: {
+      type,
+      content,
+      postId: Number(postId),
+      userId: Number(userId),
+    },
+  });
+}
 
 module.exports = { contentRouter: router };

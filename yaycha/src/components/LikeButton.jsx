@@ -27,35 +27,38 @@ export default function LikeButton({ item, comment }) {
     return item.likes.find((like) => like.userId == auth.id);
   }
 
+  // Change this:
+  // Fix the likePost mutation
   const likePost = useMutation({
     mutationFn: (id) => {
-      postPostLike(id);
+      return postPostLike(id);
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["posts"] });
-      queryClient.refetchQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
     },
   });
 
   const likeComment = useMutation({
     mutationFn: (id) => postCommentLike(id),
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
     },
   });
 
+  // Do the same for unlikePost mutation
   const unlikePost = useMutation({
     mutationFn: (id) => deletePostLike(id),
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["posts"] });
-      queryClient.refetchQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
     },
   });
 
   const unlikeComment = useMutation({
     mutationFn: (id) => deleteCommentLike(id),
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
     },
   });
 
