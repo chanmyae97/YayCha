@@ -103,6 +103,8 @@ export default function Profile() {
                 content: post.content,
                 created: post.created,
                 user: data,
+                likes: post.likes || [],
+                comments: post.comments || [],
               }}
               remove={remove.mutate}
             />

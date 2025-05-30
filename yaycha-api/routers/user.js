@@ -68,7 +68,16 @@ router.get("/users/:id", auth, async (req, res) => {
     const data = await prisma.user.findFirst({
       where: { id: Number(id) },
       include: {
-        posts: true,
+        posts: {
+          include: {
+            likes: true,
+            comments: {
+              include: {
+                likes: true
+              }
+            }
+          }
+        },
         comments: true,
         followers: true,
         following: true,

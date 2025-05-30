@@ -35,10 +35,69 @@ export default function Comments() {
     },
     onSuccess: async (comment) => {
       queryClient.cancelQueries({ queryKey: ["comments", id] });
-      queryClient.setQueryData(["comments", id], (old) => ({
-        ...old,
-        comments: [comment, ...(old?.comments || [])],
-      }));
+
+      queryClient.setQueryData(["comments", id], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          comments: [comment, ...(old.comments || [])],
+        };
+      });
+
+      queryClient.setQueryData(["posts", true], (old) => {
+        if (!old) return old;
+        return old.map((post) => {
+          if (post.id === Number(id)) {
+            return {
+              ...post,
+              comments: [...(post.comments || []), comment],
+              _count: {
+                ...post._count,
+                comments: (post._count?.comments || 0) + 1,
+              },
+            };
+          }
+          return post;
+        });
+      });
+
+      queryClient.setQueryData(["posts", false], (old) => {
+        if (!old) return old;
+        return old.map((post) => {
+          if (post.id === Number(id)) {
+            return {
+              ...post,
+              comments: [...(post.comments || []), comment],
+              _count: {
+                ...post._count,
+                comments: (post._count?.comments || 0) + 1,
+              },
+            };
+          }
+          return post;
+        });
+      });
+
+      if (data?.user?.id) {
+        queryClient.setQueryData([`users/${data.user.id}`], (old) => {
+          if (!old) return old;
+          const posts = old.posts.map((post) => {
+            if (post.id === Number(id)) {
+              return {
+                ...post,
+                comments: [...(post.comments || []), comment],
+                _count: {
+                  ...post._count,
+                  comments: (post._count?.comments || 0) + 1,
+                },
+              };
+            }
+            return post;
+          });
+          return { ...old, posts };
+        });
+      }
+
       setGlobalMsg("Comment added");
     },
   });
@@ -58,14 +117,78 @@ export default function Comments() {
     mutationFn: async (id) => {
       return deleteComment(id);
     },
-    onSuccess: () => {
-      // Invalidate and refetch the comments
-      queryClient.cancelQueries({ queryKey: ["comments"] });
-      queryClient.setQueriesData("comments", (old) => {
-        old.comment = old.comments.filter((comment) => comment.id !== id);
-        return { ...old };
+    onSuccess: (_, commentId) => {
+      queryClient.cancelQueries({ queryKey: ["comments", id] });
+
+      queryClient.setQueryData(["comments", id], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          comments: old.comments.filter((comment) => comment.id !== commentId),
+        };
       });
-      setGlobalMsg("A comment deleted");
+
+      queryClient.setQueryData(["posts", true], (old) => {
+        if (!old) return old;
+        return old.map((post) => {
+          if (post.id === Number(id)) {
+            return {
+              ...post,
+              comments: post.comments.filter(
+                (comment) => comment.id !== commentId
+              ),
+              _count: {
+                ...post._count,
+                comments: Math.max((post._count?.comments || 0) - 1, 0),
+              },
+            };
+          }
+          return post;
+        });
+      });
+
+      queryClient.setQueryData(["posts", false], (old) => {
+        if (!old) return old;
+        return old.map((post) => {
+          if (post.id === Number(id)) {
+            return {
+              ...post,
+              comments: post.comments.filter(
+                (comment) => comment.id !== commentId
+              ),
+              _count: {
+                ...post._count,
+                comments: Math.max((post._count?.comments || 0) - 1, 0),
+              },
+            };
+          }
+          return post;
+        });
+      });
+
+      if (data?.user?.id) {
+        queryClient.setQueryData([`users/${data.user.id}`], (old) => {
+          if (!old) return old;
+          const posts = old.posts.map((post) => {
+            if (post.id === Number(id)) {
+              return {
+                ...post,
+                comments: post.comments.filter(
+                  (comment) => comment.id !== commentId
+                ),
+                _count: {
+                  ...post._count,
+                  comments: Math.max((post._count?.comments || 0) - 1, 0),
+                },
+              };
+            }
+            return post;
+          });
+          return { ...old, posts };
+        });
+      }
+
+      setGlobalMsg("Comment deleted");
     },
   });
 
@@ -92,16 +215,23 @@ export default function Comments() {
         key={data.id}
         item={{
           id: data.id,
+          postId: data.id,
           content: data.content,
           created: data.created,
           user: data.user,
+          likes: data.likes || [],
+          comments: data.comments || [],
         }}
         remove={removePost.mutate}
       />
       {data.comments?.map((comment) => (
         <Item
           key={comment.id}
-          item={comment}
+          item={{
+            ...comment,
+            likes: comment.likes || [],
+            comments: comment.comments || [],
+          }}
           remove={removeComment.mutate}
           comment
         />

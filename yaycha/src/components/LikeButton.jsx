@@ -27,38 +27,188 @@ export default function LikeButton({ item, comment }) {
     return item.likes.find((like) => like.userId == auth.id);
   }
 
-  // Change this:
-  // Fix the likePost mutation
+  const updateCache = (itemId, isLike) => {
+    // Update posts cache (both latest and following feeds)
+    queryClient.setQueryData(["posts", true], (old) => {
+      if (!old) return old;
+      return old.map((post) => {
+        if (post.id === itemId) {
+          const likes = isLike
+            ? [...(post.likes || []), { userId: auth.id }]
+            : (post.likes || []).filter((like) => like.userId !== auth.id);
+          return { ...post, likes };
+        }
+        // Update likes in comments
+        if (post.comments) {
+          const comments = post.comments.map((comment) => {
+            if (comment.id === itemId) {
+              const likes = isLike
+                ? [...(comment.likes || []), { userId: auth.id }]
+                : (comment.likes || []).filter(
+                    (like) => like.userId !== auth.id
+                  );
+              return { ...comment, likes };
+            }
+            return comment;
+          });
+          return { ...post, comments };
+        }
+        return post;
+      });
+    });
+
+    queryClient.setQueryData(["posts", false], (old) => {
+      if (!old) return old;
+      return old.map((post) => {
+        if (post.id === itemId) {
+          const likes = isLike
+            ? [...(post.likes || []), { userId: auth.id }]
+            : (post.likes || []).filter((like) => like.userId !== auth.id);
+          return { ...post, likes };
+        }
+        // Update likes in comments
+        if (post.comments) {
+          const comments = post.comments.map((comment) => {
+            if (comment.id === itemId) {
+              const likes = isLike
+                ? [...(comment.likes || []), { userId: auth.id }]
+                : (comment.likes || []).filter(
+                    (like) => like.userId !== auth.id
+                  );
+              return { ...comment, likes };
+            }
+            return comment;
+          });
+          return { ...post, comments };
+        }
+        return post;
+      });
+    });
+
+    // Update comments cache for both post and comments
+    if (item.postId) {
+      queryClient.setQueryData(["comments", item.postId], (old) => {
+        if (!old) return old;
+        // If this is a post like, update the post's likes
+        if (itemId === item.postId) {
+          const likes = isLike
+            ? [...(old.likes || []), { userId: auth.id }]
+            : (old.likes || []).filter((like) => like.userId !== auth.id);
+          return { ...old, likes };
+        }
+        // If this is a comment like, update the comment's likes
+        const comments = old.comments.map((c) => {
+          if (c.id === itemId) {
+            const likes = isLike
+              ? [...(c.likes || []), { userId: auth.id }]
+              : (c.likes || []).filter((like) => like.userId !== auth.id);
+            return { ...c, likes };
+          }
+          return c;
+        });
+        return { ...old, comments };
+      });
+    }
+
+    // Update user profile cache
+    queryClient.setQueryData([`users/${item.user?.id}`], (old) => {
+      if (!old) return old;
+      const posts = old.posts.map((post) => {
+        if (post.id === itemId) {
+          const likes = isLike
+            ? [...(post.likes || []), { userId: auth.id }]
+            : (post.likes || []).filter((like) => like.userId !== auth.id);
+          return { ...post, likes };
+        }
+        // Update likes in comments
+        if (post.comments) {
+          const comments = post.comments.map((comment) => {
+            if (comment.id === itemId) {
+              const likes = isLike
+                ? [...(comment.likes || []), { userId: auth.id }]
+                : (comment.likes || []).filter(
+                    (like) => like.userId !== auth.id
+                  );
+              return { ...comment, likes };
+            }
+            return comment;
+          });
+          return { ...post, comments };
+        }
+        return post;
+      });
+      return { ...old, posts };
+    });
+  };
+
   const likePost = useMutation({
-    mutationFn: (id) => {
-      return postPostLike(id);
+    mutationFn: (id) => postPostLike(id),
+    onMutate: (id) => {
+      // Update cache optimistically
+      updateCache(id, true);
+      return { id };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["comments"] });
+    onSuccess: (data, id) => {
+      // Invalidate both posts and comments queries to ensure we have the latest data
+      queryClient.invalidateQueries(["posts"]);
+      queryClient.invalidateQueries(["comments", item.postId]);
+    },
+    onError: (error, id) => {
+      console.error("Error liking post:", error);
+      // Revert optimistic update on error
+      updateCache(id, false);
     },
   });
 
   const likeComment = useMutation({
     mutationFn: (id) => postCommentLike(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments"] });
+    onMutate: (id) => {
+      // Update cache optimistically
+      updateCache(id, true);
+      return { id };
+    },
+    onSuccess: (data, id) => {
+      // Invalidate the comments query to ensure we have the latest data
+      queryClient.invalidateQueries(["comments", item.postId]);
+    },
+    onError: (error, id) => {
+      console.error("Error liking comment:", error);
+      // Revert optimistic update on error
+      updateCache(id, false);
     },
   });
 
-  // Do the same for unlikePost mutation
   const unlikePost = useMutation({
     mutationFn: (id) => deletePostLike(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["comments"] });
+    onMutate: (id) => {
+      // Update cache optimistically
+      updateCache(id, false);
+      return { id };
+    },
+    onSuccess: (data, id) => {
+      // Invalidate both posts and comments queries to ensure we have the latest data
+      queryClient.invalidateQueries(["posts"]);
+      queryClient.invalidateQueries(["comments", item.postId]);
+    },
+    onError: (error, id) => {
+      console.error("Error unliking post:", error);
+      // Revert optimistic update on error
+      updateCache(id, true);
     },
   });
 
   const unlikeComment = useMutation({
     mutationFn: (id) => deleteCommentLike(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments"] });
+    onMutate: (id) => {
+      updateCache(id, false);
+    },
+    onSuccess: (data, id) => {
+      // Invalidate the comments query to ensure we have the latest data
+      queryClient.invalidateQueries(["comments", item.postId]);
+    },
+    onError: (error, id) => {
+      console.error("Error unliking comment:", error);
+      updateCache(id, true);
     },
   });
 
@@ -68,10 +218,12 @@ export default function LikeButton({ item, comment }) {
         <IconButton
           size="small"
           onClick={(e) => {
-            comment
-              ? unlikeComment.mutate(item.id)
-              : unlikePost.mutate(item.id);
             e.stopPropagation();
+            if (comment) {
+              unlikeComment.mutate(item.id);
+            } else {
+              unlikePost.mutate(item.id);
+            }
           }}
         >
           <LikedIcon fontSize="small" color="error" />
@@ -80,8 +232,12 @@ export default function LikeButton({ item, comment }) {
         <IconButton
           size="small"
           onClick={(e) => {
-            comment ? likeComment.mutate(item.id) : likePost.mutate(item.id);
             e.stopPropagation();
+            if (comment) {
+              likeComment.mutate(item.id);
+            } else {
+              likePost.mutate(item.id);
+            }
           }}
         >
           <LikeIcon fontSize="small" color="error" />
@@ -89,6 +245,7 @@ export default function LikeButton({ item, comment }) {
       )}
       <Button
         onClick={(e) => {
+          e.stopPropagation();
           if (comment) {
             navigate(`/likes/${item.id}/comment`);
           } else {
@@ -100,7 +257,7 @@ export default function LikeButton({ item, comment }) {
         variant="text"
         size="small"
       >
-        {item.likes ? item.likes.length : 0}
+        {item.likes?.length || 0}
       </Button>
     </ButtonGroup>
   );

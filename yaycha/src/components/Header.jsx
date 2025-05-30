@@ -9,13 +9,15 @@ import {
   DarkMode as DarkModeIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 
 export default function Header() {
   const { showForm, setShowForm, mode, setMode, showDrawer, setShowDrawer } =
     useApp();
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
 
   return (
     <AppBar position="static">
@@ -37,9 +39,11 @@ export default function Header() {
         </Typography>
 
         <Box>
-          <IconButton color="inherit" onClick={() => setShowForm(!showForm)}>
-            <AddIcon />
-          </IconButton>
+          {isHomePage && (
+            <IconButton color="inherit" onClick={() => setShowForm(!showForm)}>
+              <AddIcon />
+            </IconButton>
+          )}
 
           <IconButton color="inherit" onClick={() => navigate("/search")}>
             <SearchIcon />

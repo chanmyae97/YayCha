@@ -36,9 +36,13 @@ export default function Home() {
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ["posts"] });
-      await queryClient.setQueriesData(["posts", showLastest], (old) => {
-        old.filter((item) => item.id !== id);
-      });
+      queryClient.setQueryData(["posts", true], (old) =>
+        old ? old.filter((item) => item.id !== id) : []
+      );
+      queryClient.setQueryData(["posts", false], (old) =>
+        old ? old.filter((item) => item.id !== id) : []
+      );
+
       setGlobalMsg("A post deleted");
     },
   });
@@ -49,8 +53,20 @@ export default function Home() {
       return post;
     },
     onSuccess: async (post) => {
-      queryClient.cancelQueries({ queryKey: ["posts", showLastest] });
-      queryClient.setQueryData(["posts"], (old) => [post, ...old]);
+      if (!post) return;
+
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+      queryClient.setQueryData(["posts", true], (old) => [
+        post,
+        ...(old || []),
+      ]);
+      queryClient.setQueryData(["posts", false], (old) => {
+        if (auth && post.userId === auth.id) {
+          return [post, ...(old || [])];
+        }
+        return old;
+      });
+
       setGlobalMsg("A post added");
     },
   });

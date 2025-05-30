@@ -30,6 +30,10 @@ export async function fetchVerify() {
 }
 
 export async function postPost(content) {
+  if (!content?.trim()) {
+    return null;
+  }
+
   const token = getToken();
   const res = await fetch(`${api}/content/posts`, {
     method: "POST",
@@ -41,7 +45,8 @@ export async function postPost(content) {
   });
   if (res.ok) return res.json();
 
-  throw new Error("Error Check network Log");
+  const errorData = await res.json();
+  throw new Error(errorData.msg || "Error posting content");
 }
 
 export async function postComment(content, postId) {

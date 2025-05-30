@@ -298,21 +298,52 @@ router.post("/like/comments/:id", auth, async (req, res) => {
   const { id } = req.params;
   const user = res.locals.user;
 
-  const like = await prisma.commentLike.create({
-    data: {
-      commentId: Number(id),
-      userId: Number(user.id),
-    },
-  });
+  try {
+    // First fetch the comment to get its post ID
+    const comment = await prisma.comment.findUnique({
+      where: { id: Number(id) }
+    });
 
-  await addNoti({
-    type: "like",
-    content: "likes your comment",
-    postId: id,
-    userId: user.id,
-  });
+    if (!comment) {
+      return res.status(404).json({ msg: "Comment not found" });
+    }
 
-  res.json({ like });
+    // Check if user already liked this comment
+    const existingLike = await prisma.commentLike.findFirst({
+      where: {
+        commentId: Number(id),
+        userId: Number(user.id)
+      }
+    });
+
+    if (existingLike) {
+      return res.status(400).json({ msg: "Comment already liked" });
+    }
+
+    // Create the like
+    const like = await prisma.commentLike.create({
+      data: {
+        commentId: Number(id),
+        userId: Number(user.id),
+      },
+      include: {
+        user: true
+      }
+    });
+
+    // Create notification using the comment's post ID
+    await addNoti({
+      type: "like",
+      content: "likes your comment",
+      postId: comment.postId,
+      userId: user.id,
+    });
+
+    res.json({ like });
+  } catch (error) {
+    console.error("Error liking comment:", error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 router.delete("/unlike/comments/:id", auth, async (req, res) => {
