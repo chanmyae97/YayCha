@@ -4,6 +4,7 @@ const express = require("express");
 const router = express.Router();
 
 const prisma = require("../prismaClient");
+const { clients } = require("./ws");
 
 router.get("/posts", async (req, res) => {
   try {
@@ -301,7 +302,7 @@ router.post("/like/comments/:id", auth, async (req, res) => {
   try {
     // First fetch the comment to get its post ID
     const comment = await prisma.comment.findUnique({
-      where: { id: Number(id) }
+      where: { id: Number(id) },
     });
 
     if (!comment) {
@@ -312,8 +313,8 @@ router.post("/like/comments/:id", auth, async (req, res) => {
     const existingLike = await prisma.commentLike.findFirst({
       where: {
         commentId: Number(id),
-        userId: Number(user.id)
-      }
+        userId: Number(user.id),
+      },
     });
 
     if (existingLike) {
@@ -327,8 +328,8 @@ router.post("/like/comments/:id", auth, async (req, res) => {
         userId: Number(user.id),
       },
       include: {
-        user: true
-      }
+        user: true,
+      },
     });
 
     // Create notification using the comment's post ID
@@ -368,6 +369,13 @@ async function addNoti({ type, content, postId, userId }) {
   });
 
   if (post.userId == userId) return false;
+
+  clients.map((client) => {
+    if (client.userId == post.userId) {
+      client.ws.send(JSON.stringify({ event: "notis" }));
+      console.log(`WS: event sent to ${client.userId} : notis`);
+    }
+  });
 
   return await prisma.noti.create({
     data: {
