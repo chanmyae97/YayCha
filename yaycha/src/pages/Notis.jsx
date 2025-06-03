@@ -27,12 +27,6 @@ export default function Notis() {
   const navigate = useNavigate();
   const { auth } = useApp();
 
-  // Redirect immediately if not authenticated
-  if (!auth) {
-    navigate("/login", { replace: true });
-    return null;
-  }
-
   const { isLoading, isError, error, data } = useQuery({
     queryKey: ["notis"],
     queryFn: fetchNotis,
@@ -55,6 +49,17 @@ export default function Notis() {
   const readNoti = useMutation({
     mutationFn: putNotiRead,
   });
+
+  // Move auth check after hooks
+  useEffect(() => {
+    if (!auth) {
+      navigate("/login", { replace: true });
+    }
+  }, [auth, navigate]);
+
+  if (!auth) {
+    return null;
+  }
 
   if (isError) {
     return (

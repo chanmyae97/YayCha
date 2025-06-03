@@ -28,6 +28,7 @@ import Profile from "./pages/Profile";
 import Comments from "./pages/Comments";
 import Search from "./pages/Search";
 import Notis from "./pages/Notis";
+import AppSocket from "./AppSocket";
 
 export const AppContext = createContext();
 
@@ -120,6 +121,7 @@ export default function ThemedApp() {
       >
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
+          <AppSocket />
         </QueryClientProvider>
         <CssBaseline />
       </AppContext.Provider>
