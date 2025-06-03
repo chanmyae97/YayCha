@@ -15,17 +15,27 @@ import {
 } from "@mui/icons-material";
 
 import { useNavigate } from "react-router-dom";
-import { formatRelative, isValid } from "date-fns";
+import { formatRelative } from "date-fns";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
 import { queryClient } from "../ThemedApp";
 import { fetchNotis, pullAllNotisRead, putNotiRead } from "../libs/fetcher";
+import { useApp } from "../ThemedApp";
 
 export default function Notis() {
   const navigate = useNavigate();
+  const { auth } = useApp();
 
-  const { isloading, isError, error, data } = useQuery({
-    queryKey: ["notis", fetchNotis],
+  // Redirect if not authenticated
+  if (!auth) {
+    navigate("/login");
+    return null;
+  }
+
+  const { isLoading, isError, error, data } = useQuery({
+    queryKey: ["notis"],
+    queryFn: fetchNotis,
+    enabled: !!auth,
   });
 
   const readAllNotis = useMutation({
@@ -98,7 +108,9 @@ export default function Notis() {
                       {noti.content}
                     </Typography>
                     <Typography component="span" color="primary">
-                      <small>{formatDate(noti.created, "MMM dd, yyyy")}</small>
+                      <small>
+                        {formatRelative(new Date(noti.created), new Date())}
+                      </small>
                     </Typography>
                   </Box>
                 </Box>
