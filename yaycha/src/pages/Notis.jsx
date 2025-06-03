@@ -17,18 +17,19 @@ import {
 import { useNavigate } from "react-router-dom";
 import { formatRelative } from "date-fns";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useApp } from "../ThemedApp";
+import { useEffect } from "react";
 
 import { queryClient } from "../ThemedApp";
 import { fetchNotis, pullAllNotisRead, putNotiRead } from "../libs/fetcher";
-import { useApp } from "../ThemedApp";
 
 export default function Notis() {
   const navigate = useNavigate();
   const { auth } = useApp();
 
-  // Redirect if not authenticated
+  // Redirect immediately if not authenticated
   if (!auth) {
-    navigate("/login");
+    navigate("/login", { replace: true });
     return null;
   }
 
@@ -39,7 +40,7 @@ export default function Notis() {
   });
 
   const readAllNotis = useMutation({
-    mutationFn: { pullAllNotisRead },
+    mutationFn: pullAllNotisRead,
     onMutate: async () => {
       await queryClient.cancelQueries(["notis"]);
       await queryClient.setQueriesData(["notis"], (old) => {
@@ -51,7 +52,9 @@ export default function Notis() {
     },
   });
 
-  const readNoti = useMutation((id) => putNotiRead(id));
+  const readNoti = useMutation({
+    mutationFn: putNotiRead,
+  });
 
   if (isError) {
     return (
