@@ -1,4 +1,16 @@
-import { Box, Button, TextField, Alert } from "@mui/material";
+import {
+  Box,
+  Button,
+  TextField,
+  Alert,
+  Container,
+  Typography,
+  useTheme,
+  Paper,
+  Divider,
+  Fade,
+} from "@mui/material";
+import { Comment as CommentIcon, Send as SendIcon } from "@mui/icons-material";
 import { useRef } from "react";
 
 import Item from "../components/Item";
@@ -20,6 +32,7 @@ export default function Comments() {
   const navigate = useNavigate();
   const contentInput = useRef();
   const { setGlobalMsg, auth } = useApp();
+  const theme = useTheme();
 
   const { isLoading, isError, error, data } = useQuery({
     queryKey: ["comments", id],
@@ -194,71 +207,202 @@ export default function Comments() {
 
   if (isError) {
     return (
-      <Box>
-        <Alert severity="warning">{error.message}</Alert>
-      </Box>
+      <Container maxWidth="sm">
+        <Alert
+          severity="warning"
+          sx={{
+            mt: 3,
+            borderRadius: 2,
+            "& .MuiAlert-icon": {
+              color: theme.palette.warning.main,
+            },
+          }}
+        >
+          {error.message}
+        </Alert>
+      </Container>
     );
   }
 
   if (isLoading) {
-    return <Box sx={{ textAlign: "center" }}>Loading...</Box>;
+    return (
+      <Container maxWidth="sm">
+        <Box
+          sx={{
+            textAlign: "center",
+            mt: 4,
+            color: "text.secondary",
+          }}
+        >
+          <CommentIcon sx={{ fontSize: 48, opacity: 0.5, mb: 1 }} />
+          <Typography>Loading comments...</Typography>
+        </Box>
+      </Container>
+    );
   }
 
   if (!data) {
-    return <Box sx={{ textAlign: "center" }}>Post not found</Box>;
+    return (
+      <Container maxWidth="sm">
+        <Box
+          sx={{
+            textAlign: "center",
+            mt: 4,
+            color: "text.secondary",
+          }}
+        >
+          <CommentIcon sx={{ fontSize: 48, opacity: 0.5, mb: 1 }} />
+          <Typography>Post not found</Typography>
+        </Box>
+      </Container>
+    );
   }
 
   return (
-    <Box>
-      <Item
-        primary
-        key={data.id}
-        item={{
-          id: data.id,
-          postId: data.id,
-          content: data.content,
-          created: data.created,
-          user: data.user,
-          likes: data.likes || [],
-          comments: data.comments || [],
-        }}
-        remove={removePost.mutate}
-      />
-      {data.comments?.map((comment) => (
-        <Item
-          key={comment.id}
-          item={{
-            ...comment,
-            likes: comment.likes || [],
-            comments: comment.comments || [],
-          }}
-          remove={removeComment.mutate}
-          comment
-        />
-      ))}
-
-      {auth && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const content = contentInput.current.value;
-            if (!content) return;
-            addComment.mutate(content);
-            e.currentTarget.reset();
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            background:
+              theme.palette.mode === "light"
+                ? "rgba(255, 255, 255, 0.8)"
+                : "rgba(0, 0, 0, 0.2)",
+            backdropFilter: "blur(8px)",
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 2,
+            overflow: "hidden",
+            mb: 3,
           }}
         >
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 3 }}>
-            <TextField
-              inputRef={contentInput}
-              multiline
-              placeholder="Your Comment"
-            />
-            <Button type="submit" variant="contained">
-              Reply
-            </Button>
-          </Box>
-        </form>
-      )}
-    </Box>
+          <Item
+            primary
+            key={data.id}
+            item={{
+              id: data.id,
+              postId: data.id,
+              content: data.content,
+              created: data.created,
+              user: data.user,
+              likes: data.likes || [],
+              comments: data.comments || [],
+            }}
+            remove={removePost.mutate}
+          />
+        </Paper>
+
+        {auth && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              mb: 3,
+              background:
+                theme.palette.mode === "light"
+                  ? "rgba(255, 255, 255, 0.8)"
+                  : "rgba(0, 0, 0, 0.2)",
+              backdropFilter: "blur(8px)",
+              border: `1px solid ${theme.palette.divider}`,
+              borderRadius: 2,
+            }}
+          >
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const content = contentInput.current.value;
+                if (!content) return;
+                addComment.mutate(content);
+                e.currentTarget.reset();
+              }}
+            >
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <TextField
+                  inputRef={contentInput}
+                  multiline
+                  rows={2}
+                  placeholder="Write a comment..."
+                  variant="outlined"
+                  fullWidth
+                  InputProps={{
+                    sx: {
+                      borderRadius: 2,
+                      backgroundColor:
+                        theme.palette.mode === "light"
+                          ? "rgba(0, 0, 0, 0.04)"
+                          : "rgba(255, 255, 255, 0.05)",
+                      "& fieldset": {
+                        borderColor: "transparent",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: "transparent",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "transparent",
+                      },
+                    },
+                  }}
+                />
+                <Button
+                  type="submit"
+                  variant="contained"
+                  endIcon={<SendIcon />}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    alignSelf: "flex-end",
+                  }}
+                >
+                  Comment
+                </Button>
+              </Box>
+            </form>
+          </Paper>
+        )}
+
+        <Paper
+          elevation={0}
+          sx={{
+            background:
+              theme.palette.mode === "light"
+                ? "rgba(255, 255, 255, 0.8)"
+                : "rgba(0, 0, 0, 0.2)",
+            backdropFilter: "blur(8px)",
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 2,
+            overflow: "hidden",
+          }}
+        >
+          {data.comments && data.comments.length > 0 ? (
+            data.comments.map((comment, index) => (
+              <Fade in key={comment.id}>
+                <Box>
+                  <Item
+                    item={{
+                      ...comment,
+                      likes: comment.likes || [],
+                      comments: comment.comments || [],
+                    }}
+                    remove={removeComment.mutate}
+                    comment
+                  />
+                  {index < data.comments.length - 1 && <Divider />}
+                </Box>
+              </Fade>
+            ))
+          ) : (
+            <Box
+              sx={{
+                textAlign: "center",
+                py: 4,
+                color: "text.secondary",
+              }}
+            >
+              <CommentIcon sx={{ fontSize: 48, opacity: 0.5, mb: 1 }} />
+              <Typography>No comments yet. Be the first to comment!</Typography>
+            </Box>
+          )}
+        </Paper>
+      </Box>
+    </Container>
   );
 }
