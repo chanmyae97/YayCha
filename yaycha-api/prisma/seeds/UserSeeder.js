@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 
 const prisma = new PrismaClient();
 
-// Avatar service base URL
+// Avatar service base URL for profile pictures
 const AVATAR_BASE_URL = "https://avatar-placeholder.iran.liara.run/public";
 // Picsum base URL for cover photos
 const COVER_BASE_URL = "https://picsum.photos";
@@ -17,8 +17,8 @@ async function UserSeeder() {
         const firstName = faker.person.firstName();
         const lastName = faker.person.lastName();
 
-        const name = `${firstName} ${lastName}`
-        const username = `${firstName} ${lastName[0]}`.toLowerCase();
+        const name = `${firstName} ${lastName}`;
+        const username = `${firstName}${lastName[0]}`.toLowerCase();
         const bio = faker.person.bio();
         
         // Generate random avatar number (1-100)
@@ -43,7 +43,7 @@ async function UserSeeder() {
         });
     }
 
-    console.log("User seeding done.")
+    console.log("User seeding done.");
 }
 
 module.exports = {UserSeeder};

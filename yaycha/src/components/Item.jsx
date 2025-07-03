@@ -5,15 +5,15 @@ import {
   Typography,
   IconButton,
   CardMedia,
+  Avatar,
+  useTheme,
 } from "@mui/material";
 
 import {
-  Alarm as TimeIcon,
-  AccountCircle as UserIcon,
-  Delete as DeleteIIcon,
+  AccessTime as TimeIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 
-import { green } from "@mui/material/colors";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../ThemedApp";
 import LikeButton from "./LikeButton";
@@ -24,6 +24,7 @@ import { formatRelative, isValid } from "date-fns";
 export default function Item({ item, remove, primary, comment }) {
   const navigate = useNavigate();
   const { auth } = useApp();
+  const theme = useTheme();
 
   const formatDate = (dateString) => {
     if (!dateString) return "Unknown date";
@@ -32,56 +33,51 @@ export default function Item({ item, remove, primary, comment }) {
   };
 
   return (
-    <Card sx={{ mb: 2 }}>
-      {primary && <Box sx={{ height: 50, bgcolor: green[500] }} />}
+    <Card
+      elevation={0}
+      sx={{
+        mb: 2,
+        borderRadius: 3,
+        background:
+          theme.palette.mode === "light"
+            ? "rgba(255, 255, 255, 0.8)"
+            : "rgba(0, 0, 0, 0.2)",
+        backdropFilter: "blur(8px)",
+        border: `1px solid ${theme.palette.divider}`,
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
+          transform: comment ? "none" : "translateY(-2px)",
+          boxShadow: comment ? "none" : theme.shadows[4],
+        },
+      }}
+    >
+      {primary && (
+        <Box
+          sx={{
+            height: 4,
+            background: "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
+            borderTopLeftRadius: 12,
+            borderTopRightRadius: 12,
+          }}
+        />
+      )}
+
       <CardContent
         onClick={() => {
           if (comment) return false;
           navigate(`/comments/${item.id}`);
         }}
-        sx={{ cursor: comment ? "default" : "pointer" }}
+        sx={{
+          cursor: comment ? "default" : "pointer",
+          "&:last-child": { pb: 2 },
+        }}
       >
         <Box
           sx={{
             display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <TimeIcon fontSize="10" color="success" />
-            <Typography variant="caption" sx={{ color: green[500] }}>
-              {formatDate(item.created)}
-            </Typography>
-          </Box>
-          {auth && auth.id === item.user?.id && (
-            <IconButton
-              sx={{ color: "text.fade" }}
-              size="small"
-              onClick={(e) => {
-                remove(item.id);
-                e.stopPropagation();
-              }}
-            >
-              <DeleteIIcon fontSize="inherit" color="inherit" />
-            </IconButton>
-          )}
-        </Box>
-
-        <Typography sx={{ my: 3 }}>{item.content}</Typography>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
+            mb: 2,
           }}
         >
           <Box
@@ -93,21 +89,97 @@ export default function Item({ item, remove, primary, comment }) {
             }}
             sx={{
               display: "flex",
-              flexDirection: "row",
               alignItems: "center",
-              gap: 1,
+              gap: 1.5,
               cursor: item.user?.id ? "pointer" : "default",
+              "&:hover": {
+                "& .username": {
+                  color: theme.palette.primary.main,
+                },
+              },
             }}
           >
-            <UserIcon fontSize="12" color="info" />
-            <Typography variant="caption">
-              {item.user?.name || "Unknown User"}
-            </Typography>
+            <Avatar
+              sx={{
+                width: 40,
+                height: 40,
+                bgcolor: theme.palette.primary.main,
+                fontSize: "1rem",
+                fontWeight: 500,
+              }}
+            >
+              {item.user?.name ? item.user.name[0].toUpperCase() : "?"}
+            </Avatar>
+            <Box>
+              <Typography
+                className="username"
+                sx={{
+                  fontWeight: 500,
+                  transition: "color 0.2s ease-in-out",
+                }}
+              >
+                {item.user?.name || "Unknown User"}
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  color: "text.secondary",
+                }}
+              >
+                <TimeIcon sx={{ fontSize: 14 }} />
+                <Typography variant="caption">
+                  {formatDate(item.created)}
+                </Typography>
+              </Box>
+            </Box>
           </Box>
-          <Box>
-            <LikeButton item={item} comment={comment} />
-            <CommentButton item={item} comment={comment} />
-          </Box>
+
+          {auth && auth.id === item.user?.id && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                remove(item.id);
+                e.stopPropagation();
+              }}
+              sx={{
+                color: theme.palette.error.main,
+                opacity: 0.7,
+                "&:hover": {
+                  opacity: 1,
+                  backgroundColor: theme.palette.error.main + "14",
+                },
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
+
+        <Typography
+          sx={{
+            mb: 2,
+            px: 1,
+            lineHeight: 1.6,
+            color: theme.palette.text.primary,
+          }}
+        >
+          {item.content}
+        </Typography>
+
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 1,
+            pt: 1,
+            borderTop: `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <LikeButton item={item} comment={comment} />
+          <CommentButton item={item} comment={comment} />
         </Box>
       </CardContent>
     </Card>

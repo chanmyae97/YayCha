@@ -7,6 +7,8 @@ import {
   Typography,
   IconButton,
   Badge,
+  Container,
+  useTheme,
 } from "@mui/material";
 
 import {
@@ -20,6 +22,8 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchNotis } from "../libs/fetcher";
+import { useState } from "react";
+import NotificationDropdown from "./NotificationDropdown";
 
 export default function Header() {
   const {
@@ -34,9 +38,15 @@ export default function Header() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
   const isHomePage = location.pathname === "/";
+  const [anchorEl, setAnchorEl] = useState(null);
 
-  const { isLoading, isError, data } = useQuery({
+  const {
+    isLoading,
+    isError,
+    data = [],
+  } = useQuery({
     queryKey: ["notis", auth],
     queryFn: fetchNotis,
     enabled: !!auth,
@@ -45,72 +55,95 @@ export default function Header() {
   function notiCount() {
     if (!auth) return 0;
     if (isLoading || isError) return 0;
-
     return data.filter((noti) => !noti.read).length;
   }
 
+  const handleNotiClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleNotiClose = () => {
+    setAnchorEl(null);
+  };
+
   return (
-    <AppBar position="static">
-      <Toolbar>
-        <IconButton
-          color="inherit"
-          edge="start"
-          onClick={() => setShowDrawer(!showDrawer)}
-        >
-          <MenuIcon />
-        </IconButton>
-
-        <Typography
-          sx={{ flexGrow: 1, ml: 2 }}
-          style={{ userSelect: "none", cursor: "pointer" }}
-          onClick={() => navigate("/")}
-        >
-          Yaycha
-        </Typography>
-
-        <Box>
-          {isHomePage && (
-            <IconButton color="inherit" onClick={() => setShowForm(!showForm)}>
-              <AddIcon />
-            </IconButton>
-          )}
-
-          <IconButton color="inherit" onClick={() => navigate("/search")}>
-            <SearchIcon />
-          </IconButton>
-
-          {auth && (
+    <Box sx={{ height: "64px" }}>
+      <AppBar
+        position="fixed"
+        elevation={0}
+        sx={{
+          width: "100%",
+          zIndex: 1100,
+          backgroundColor: theme.palette.mode === "light" ? "#fff" : "#121212",
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          color: theme.palette.mode === "light" ? "#1a1a1a" : "#fff",
+        }}
+      >
+        <Container maxWidth="lg">
+          <Toolbar>
             <IconButton
               color="inherit"
-              onClick={() => {
-                navigate("/notis");
+              edge="start"
+              onClick={() => setShowDrawer(!showDrawer)}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+
+            <Typography
+              variant="h6"
+              sx={{
+                flexGrow: 1,
+                fontWeight: 600,
+                cursor: "pointer",
+                userSelect: "none",
               }}
+              onClick={() => navigate("/")}
             >
-              <Badge color="error" badgeContent={notiCount()}>
-                <NotiIcon />
-              </Badge>
-            </IconButton>
-          )}
+              Social
+            </Typography>
 
-          {mode === "dark" ? (
-            <IconButton
-              color="inherit"
-              edge="end"
-              onClick={() => setMode("light")}
-            >
-              <LightModeIcon />
-            </IconButton>
-          ) : (
-            <IconButton
-              color="inherit"
-              edge="end"
-              onClick={() => setMode("dark")}
-            >
-              <DarkModeIcon />
-            </IconButton>
-          )}
-        </Box>
-      </Toolbar>
-    </AppBar>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {isHomePage && (
+                <IconButton
+                  color="inherit"
+                  onClick={() => setShowForm(!showForm)}
+                >
+                  <AddIcon />
+                </IconButton>
+              )}
+
+              <IconButton color="inherit" onClick={() => navigate("/search")}>
+                <SearchIcon />
+              </IconButton>
+
+              {auth && (
+                <IconButton color="inherit" onClick={handleNotiClick}>
+                  <Badge color="error" badgeContent={notiCount()}>
+                    <NotiIcon />
+                  </Badge>
+                </IconButton>
+              )}
+
+              <IconButton
+                color="inherit"
+                edge="end"
+                onClick={() => setMode(mode === "dark" ? "light" : "dark")}
+              >
+                {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+              </IconButton>
+            </Box>
+          </Toolbar>
+        </Container>
+      </AppBar>
+
+      <NotificationDropdown
+        open={Boolean(anchorEl)}
+        anchorEl={anchorEl}
+        onClose={handleNotiClose}
+        notifications={data}
+        isLoading={isLoading}
+      />
+    </Box>
   );
 }

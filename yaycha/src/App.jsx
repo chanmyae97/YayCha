@@ -27,14 +27,36 @@ export default function App() {
   };
 
   return (
-    <Box>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Header />
-      <Container maxWidth="sm" sx={{ mt: 4 }}>
-        {showForm && <Form add={add} />}
-        {data.map((item) => {
-          return <Item key={item.id} item={item} remove={remove} />;
-        })}
-      </Container>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          width: "100%",
+          backgroundColor: (theme) => theme.palette.background.default,
+          zIndex: 1,
+        }}
+      >
+        <Container
+          maxWidth="sm"
+          sx={{
+            pt: 2,
+            pb: 4,
+          }}
+        >
+          {showForm && (
+            <Box sx={{ mb: 3 }}>
+              <Form add={add} />
+            </Box>
+          )}
+          <Box>
+            {data.map((item) => (
+              <Item key={item.id} item={item} remove={remove} />
+            ))}
+          </Box>
+        </Container>
+      </Box>
     </Box>
   );
 }

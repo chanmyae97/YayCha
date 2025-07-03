@@ -1,4 +1,12 @@
-import { Alert, Avatar, Box, Typography } from "@mui/material";
+import {
+  Alert,
+  Avatar,
+  Box,
+  Typography,
+  Container,
+  Paper,
+  useTheme,
+} from "@mui/material";
 import { pink } from "@mui/material/colors";
 
 import { useParams } from "react-router-dom";
@@ -16,6 +24,8 @@ const api = import.meta.env.VITE_API;
 export default function Profile() {
   const { id } = useParams();
   const { setGlobalMsg, auth } = useApp();
+  const theme = useTheme();
+
   const { isLoading, isError, error, data } = useQuery({
     queryKey: [`users/${id}`],
     queryFn: async () => await fetchUser(id),
@@ -49,67 +59,155 @@ export default function Profile() {
 
   if (isError) {
     return (
-      <Box>
-        <Alert severity="warning">{error.message}</Alert>
-      </Box>
+      <Container maxWidth="md">
+        <Alert
+          severity="warning"
+          sx={{
+            mt: 3,
+            borderRadius: 2,
+            "& .MuiAlert-icon": {
+              color: theme.palette.warning.main,
+            },
+          }}
+        >
+          {error.message}
+        </Alert>
+      </Container>
     );
   }
 
   if (isLoading) {
-    return <Box sx={{ textAlign: "center" }}>Loading...</Box>;
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ textAlign: "center", mt: 3 }}>
+          <Typography variant="h6" color="text.secondary">
+            Loading...
+          </Typography>
+        </Box>
+      </Container>
+    );
   }
 
   if (!data) {
-    return <Box sx={{ textAlign: "center" }}>User not found</Box>;
-  }
-
-  return (
-    <Box>
-      <Box sx={{ bgcolor: "banner", height: 150, borderRadius: 4 }}></Box>
-      <Box
-        sx={{
-          mb: 4,
-          marginTop: "-60px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 1,
-        }}
-      >
-        <Avatar sx={{ width: 100, height: 100, bgcolor: pink[500] }} />
-
-        <Box sx={{ textAlign: "center" }}>
-          <Typography>{data.name}</Typography>
-          <Typography sx={{ fontSize: "0.8em", color: "text.fade" }}>
-            {data.bio}
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ textAlign: "center", mt: 3 }}>
+          <Typography variant="h6" color="text.secondary">
+            User not found
           </Typography>
         </Box>
-        {auth && auth.id !== Number(id) && (
-          <Box sx={{ mt: 1 }}>
-            <FollowButton user={data} />
-          </Box>
-        )}
-      </Box>
-      <Box>
-        {auth && auth.id === Number(id) && <Form add={add} />}
-        {data.posts
-          ?.sort((a, b) => new Date(b.created) - new Date(a.created))
-          .map((post) => (
-            <Item
-              key={post.id}
-              item={{
-                id: post.id,
-                content: post.content,
-                created: post.created,
-                user: data,
-                likes: post.likes || [],
-                comments: post.comments || [],
+      </Container>
+    );
+  }
+
+  const profilePictureUrl = data.profilePicture || "";
+  const coverPhotoUrl = data.coverPhoto || "";
+
+  return (
+    <Container maxWidth="md">
+      <Paper
+        elevation={0}
+        sx={{
+          mt: 3,
+          borderRadius: 4,
+          overflow: "hidden",
+          background:
+            theme.palette.mode === "light"
+              ? "rgba(255, 255, 255, 0.8)"
+              : "rgba(0, 0, 0, 0.2)",
+          backdropFilter: "blur(8px)",
+          border: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <Box
+          sx={{
+            height: 200,
+            width: "100%",
+            backgroundImage: coverPhotoUrl
+              ? `url(${coverPhotoUrl})`
+              : "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <Box
+          sx={{
+            p: 3,
+            marginTop: "-60px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <Avatar
+            sx={{
+              width: 120,
+              height: 120,
+              border: `4px solid ${theme.palette.background.paper}`,
+              backgroundColor: theme.palette.primary.main,
+              boxShadow: theme.shadows[3],
+            }}
+            src={profilePictureUrl}
+          />
+
+          <Box sx={{ textAlign: "center" }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                background:
+                  theme.palette.mode === "light"
+                    ? "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)"
+                    : "linear-gradient(45deg, #3f51b5 30%, #536dfe 90%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                mb: 1,
               }}
-              remove={remove.mutate}
-            />
-          ))}
+            >
+              {data.name}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                color: "text.secondary",
+                maxWidth: 500,
+                mx: "auto",
+              }}
+            >
+              {data.bio}
+            </Typography>
+          </Box>
+
+          {auth && auth.id !== Number(id) && (
+            <Box sx={{ mt: 1 }}>
+              <FollowButton user={data} />
+            </Box>
+          )}
+        </Box>
+      </Paper>
+
+      <Box sx={{ mt: 4 }}>
+        {auth && auth.id === Number(id) && <Form add={add} />}
+        <Box sx={{ mt: 2 }}>
+          {data.posts
+            ?.sort((a, b) => new Date(b.created) - new Date(a.created))
+            .map((post) => (
+              <Item
+                key={post.id}
+                item={{
+                  id: post.id,
+                  content: post.content,
+                  created: post.created,
+                  user: data,
+                  likes: post.likes || [],
+                  comments: post.comments || [],
+                }}
+                remove={remove.mutate}
+              />
+            ))}
+        </Box>
       </Box>
-    </Box>
+    </Container>
   );
 }

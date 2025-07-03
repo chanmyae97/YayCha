@@ -11,6 +11,7 @@ import {
   ListItemText,
   Avatar,
   Typography,
+  useTheme,
 } from "@mui/material";
 
 import {
@@ -21,109 +22,236 @@ import {
   Login as LoginIcon,
 } from "@mui/icons-material";
 
-import { deepPurple } from "@mui/material/colors";
-
 import { useApp } from "../ThemedApp";
 
 export default function AppDrawer() {
   const { showDrawer, setShowDrawer, auth, setAuth } = useApp();
   const navigate = useNavigate();
+  const theme = useTheme();
+
+  const handleNavigation = (path) => {
+    navigate(path);
+    setShowDrawer(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setAuth(null);
+    navigate("/");
+    setShowDrawer(false);
+  };
+
   return (
-    <div>
-      <Drawer open={showDrawer} onClose={() => setShowDrawer(false)}>
+    <Drawer
+      open={showDrawer}
+      onClose={() => setShowDrawer(false)}
+      PaperProps={{
+        sx: {
+          backgroundColor:
+            theme.palette.mode === "light"
+              ? "rgba(255, 255, 255, 0.95)"
+              : "rgba(0, 0, 0, 0.95)",
+          backdropFilter: "blur(8px)",
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 320,
+          height: 180,
+          position: "relative",
+          background:
+            theme.palette.mode === "light"
+              ? "linear-gradient(135deg, #2196F3 0%, #21CBF3 100%)"
+              : "linear-gradient(135deg, #FE6B8B 0%, #FF8E53 100%)",
+          overflow: "hidden",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background:
+              "radial-gradient(circle at top right, rgba(255,255,255,0.2) 0%, transparent 70%)",
+          },
+        }}
+      >
         <Box
           sx={{
-            mb: 6,
-            width: 300,
-            height: 140,
-            bgcolor: "banner",
-            position: "relative",
+            position: "absolute",
+            left: 24,
+            bottom: -32,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 1,
           }}
         >
-          <Box
+          <Avatar
             sx={{
-              gap: 2,
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              position: "absolute",
-              left: 20,
-              bottom: -30,
+              width: 80,
+              height: 80,
+              border: "4px solid",
+              borderColor: theme.palette.background.paper,
+              boxShadow: theme.shadows[4],
+              transition: "transform 0.2s ease-in-out",
+              "&:hover": {
+                transform: "scale(1.05)",
+              },
             }}
           >
-            <Avatar
-              sx={{
-                width: 94,
-                height: 94,
-                color: "white",
-                background: deepPurple[500],
+            {auth ? auth.name[0].toUpperCase() : "G"}
+          </Avatar>
+          <Typography
+            sx={{
+              color: "#fff",
+              fontWeight: 600,
+              textShadow: "0 2px 4px rgba(0,0,0,0.2)",
+              fontSize: "1.2rem",
+            }}
+          >
+            {auth ? auth.name : "Guest"}
+          </Typography>
+        </Box>
+      </Box>
+
+      <List sx={{ mt: 4, px: 1 }}>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={() => handleNavigation("/")}
+            sx={{
+              borderRadius: 2,
+              mb: 1,
+              "&:hover": {
+                backgroundColor:
+                  theme.palette.mode === "light"
+                    ? "rgba(33, 150, 243, 0.08)"
+                    : "rgba(255, 255, 255, 0.08)",
+              },
+            }}
+          >
+            <ListItemIcon>
+              <HomeIcon color="primary" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Home"
+              primaryTypographyProps={{
+                fontWeight: 500,
               }}
             />
-            <Typography sx={{ fontWeight: "bold" }}>
-              {auth ? auth.name : "Guest"}
-            </Typography>
-          </Box>
-        </Box>
-        <List>
-          <ListItem>
-            <ListItemButton onClick={() => navigate("/")}>
-              <ListItemIcon>
-                <HomeIcon />
-              </ListItemIcon>
-              <ListItemText>Home</ListItemText>
-            </ListItemButton>
-          </ListItem>
+          </ListItemButton>
+        </ListItem>
 
-          <Divider />
-          {auth && (
-            <>
-              <ListItem>
-                <ListItemButton onClick={() => navigate(`/profile/${auth.id}`)}>
-                  <ListItemIcon>
-                    <ProfileIcon />
-                  </ListItemIcon>
-                  <ListItemText>Profile</ListItemText>
-                </ListItemButton>
-              </ListItem>
+        <Divider sx={{ my: 2 }} />
 
-              <ListItem>
-                <ListItemButton
-                  onClick={() => {
-                    localStorage.removeItem("token");
-                    setAuth(null);
-                    navigate("/");
+        {auth ? (
+          <>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => handleNavigation(`/profile/${auth.id}`)}
+                sx={{
+                  borderRadius: 2,
+                  mb: 1,
+                  "&:hover": {
+                    backgroundColor:
+                      theme.palette.mode === "light"
+                        ? "rgba(33, 150, 243, 0.08)"
+                        : "rgba(255, 255, 255, 0.08)",
+                  },
+                }}
+              >
+                <ListItemIcon>
+                  <ProfileIcon color="primary" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Profile"
+                  primaryTypographyProps={{
+                    fontWeight: 500,
                   }}
-                >
-                  <ListItemIcon>
-                    <LogoutIcon color="error" />
-                  </ListItemIcon>
-                  <ListItemText>Logout</ListItemText>
-                </ListItemButton>
-              </ListItem>
-            </>
-          )}
-          {!auth && (
-            <>
-              <ListItem>
-                <ListItemButton onClick={() => navigate("/register")}>
-                  <ListItemIcon>
-                    <RegisterIcon />
-                  </ListItemIcon>
-                  <ListItemText>Register</ListItemText>
-                </ListItemButton>
-              </ListItem>
-              <ListItem>
-                <ListItemButton onClick={() => navigate("/login")}>
-                  <ListItemIcon>
-                    <LoginIcon />
-                  </ListItemIcon>
-                  <ListItemText>Login</ListItemText>
-                </ListItemButton>
-              </ListItem>
-            </>
-          )}
-        </List>
-      </Drawer>
-    </div>
+                />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={handleLogout}
+                sx={{
+                  borderRadius: 2,
+                  color: theme.palette.error.main,
+                  "&:hover": {
+                    backgroundColor: theme.palette.error.main + "14",
+                  },
+                }}
+              >
+                <ListItemIcon>
+                  <LogoutIcon color="error" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Logout"
+                  primaryTypographyProps={{
+                    fontWeight: 500,
+                    color: "inherit",
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          </>
+        ) : (
+          <>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => handleNavigation("/register")}
+                sx={{
+                  borderRadius: 2,
+                  mb: 1,
+                  "&:hover": {
+                    backgroundColor:
+                      theme.palette.mode === "light"
+                        ? "rgba(33, 150, 243, 0.08)"
+                        : "rgba(255, 255, 255, 0.08)",
+                  },
+                }}
+              >
+                <ListItemIcon>
+                  <RegisterIcon color="primary" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Register"
+                  primaryTypographyProps={{
+                    fontWeight: 500,
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => handleNavigation("/login")}
+                sx={{
+                  borderRadius: 2,
+                  "&:hover": {
+                    backgroundColor:
+                      theme.palette.mode === "light"
+                        ? "rgba(33, 150, 243, 0.08)"
+                        : "rgba(255, 255, 255, 0.08)",
+                  },
+                }}
+              >
+                <ListItemIcon>
+                  <LoginIcon color="primary" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Login"
+                  primaryTypographyProps={{
+                    fontWeight: 500,
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          </>
+        )}
+      </List>
+    </Drawer>
   );
 }
