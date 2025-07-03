@@ -5,6 +5,8 @@ CREATE TABLE "User" (
     "username" TEXT NOT NULL,
     "bio" TEXT NOT NULL,
     "password" TEXT NOT NULL,
+    "profilePicture" TEXT NOT NULL DEFAULT '',
+    "coverPhoto" TEXT NOT NULL DEFAULT '',
     "created" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
