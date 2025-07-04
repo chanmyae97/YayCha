@@ -6,19 +6,26 @@ const jwt = require("jsonwebtoken");
 const { auth } = require("../middlewares/auth");
 const multer = require("multer");
 const path = require("path");
-const fs = require('fs').promises;
+const fs = require("fs").promises;
 
 // Helper function to check if URL is external
 const isExternalUrl = (url) => {
   try {
-    return new URL(url).protocol.startsWith('http');
+    return new URL(url).protocol.startsWith("http");
   } catch {
     return false;
   }
 };
 
 const storage = multer.diskStorage({
-  destination: "uploads/",
+  destination: (req, file, cb) => {
+    const { id } = req.params;
+    const dir = `uploads/users/${id}`;
+
+    fs.mkdir(dir, { recursive: true })
+      .then(() => cb(null, dir))
+      .catch((err) => cb(err));
+  },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     const filename = `${file.fieldname}-${Date.now()}${ext}`;
@@ -31,9 +38,9 @@ const upload = multer({ storage });
 // Helper function to delete old file
 const deleteOldFile = async (filename) => {
   if (!filename || isExternalUrl(filename)) return;
-  
+
   try {
-    const filePath = path.join('uploads', filename);
+    const filePath = path.join("uploads", filename);
     await fs.unlink(filePath);
     console.log(`Successfully deleted old file: ${filename}`);
   } catch (error) {
@@ -60,80 +67,93 @@ const deleteOldFile = async (filename) => {
 //   });
 // };
 
-router.post("/users/:id/upload", auth, upload.single("file"), async (req,res) =>{
-  const {id} = req.params;
-  const user = res.locals.user;
-  if(user.id !== Number(id)){
-    return res.status(403).json({msg: "Unauthorized"});
-  }
-
-  const file = req.file;
-  if(!file){
-    return res.status(400).json({msg: "No file uploaded"});
-  }
-
-  try {
-    // Get the current user data to find the old profile picture
-    const currentUser = await prisma.user.findUnique({
-      where: { id: Number(id) },
-      select: { profilePicture: true }
-    });
-
-    // Only delete if it's a local file
-    if (currentUser?.profilePicture && !isExternalUrl(currentUser.profilePicture)) {
-      await deleteOldFile(currentUser.profilePicture);
+router.post(
+  "/users/:id/upload",
+  auth,
+  upload.single("file"),
+  async (req, res) => {
+    const { id } = req.params;
+    const user = res.locals.user;
+    if (user.id !== Number(id)) {
+      return res.status(403).json({ msg: "Unauthorized" });
     }
 
-    const data = await prisma.user.update({
-      where: {id: Number(id)},
-      data: {
-        profilePicture: file.filename,
-      },
-    });
-    res.json(data);
-  } catch (error) {
-    await deleteOldFile(file.filename);
-    console.error("Error uploading file:", error);
-    res.status(500).json({ msg: "Error uploading file" });
-  }
-});
-
-router.post("/users/:id/upload-cover", auth, upload.single("file"), async (req,res) =>{
-  const {id} = req.params;
-  const user = res.locals.user;
-  if(user.id !== Number(id)){
-    return res.status(403).json({msg: "Unauthorized"});
-  }
-  const file = req.file;
-  if(!file){
-    return res.status(400).json({msg: "No file uploaded"});
-  }
-
-  try {
-    // Get the current user data to find the old cover photo
-    const currentUser = await prisma.user.findUnique({
-      where: { id: Number(id) },
-      select: { coverPhoto: true }
-    });
-
-    // Only delete if it's a local file
-    if (currentUser?.coverPhoto && !isExternalUrl(currentUser.coverPhoto)) {
-      await deleteOldFile(currentUser.coverPhoto);
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ msg: "No file uploaded" });
     }
 
-    const data = await prisma.user.update({
-      where: {id: Number(id)},
-      data: {
-        coverPhoto: file.filename,
-      },
-    });
-    res.json(data); 
-  } catch (error) {
-    await deleteOldFile(file.filename);
-    console.error("Error uploading file:", error);
-    res.status(500).json({ msg: "Error uploading file" });
+    try {
+      // Get the current user data to find the old profile picture
+      const currentUser = await prisma.user.findUnique({
+        where: { id: Number(id) },
+        select: { profilePicture: true },
+      });
+
+      // Only delete if it's a local file
+      if (
+        currentUser?.profilePicture &&
+        !isExternalUrl(currentUser.profilePicture)
+      ) {
+        await deleteOldFile(currentUser.profilePicture);
+      }
+
+      const data = await prisma.user.update({
+        where: { id: Number(id) },
+        data: {
+          profilePicture: `users/${id}/${file.filename}`,
+        },
+      });
+      res.json(data);
+    } catch (error) {
+      await deleteOldFile(id, file.filename);
+      console.error("Error uploading file:", error);
+      res.status(500).json({ msg: "Error uploading file" });
+    }
   }
-});
+);
+
+router.post(
+  "/users/:id/upload-cover",
+  auth,
+  upload.single("file"),
+  async (req, res) => {
+    const { id } = req.params;
+    const user = res.locals.user;
+    if (user.id !== Number(id)) {
+      return res.status(403).json({ msg: "Unauthorized" });
+    }
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ msg: "No file uploaded" });
+    }
+
+    try {
+      // Get the current user data to find the old cover photo
+      const currentUser = await prisma.user.findUnique({
+        where: { id: Number(id) },
+        select: { coverPhoto: true },
+      });
+
+      // Only delete if it's a local file
+      if (currentUser?.coverPhoto && !isExternalUrl(currentUser.coverPhoto)) {
+        await deleteOldFile(currentUser.coverPhoto);
+      }
+
+      const data = await prisma.user.update({
+        where: { id: Number(id) },
+        data: {
+          coverPhoto: `users/${id}/${file.filename}`,
+        },
+      });
+      res.json(data);
+    } catch (error) {
+      await deleteOldFile(id, file.filename);
+      console.error("Error uploading file:", error);
+      res.status(500).json({ msg: "Error uploading file" });
+    }
+  }
+);
 
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
@@ -153,7 +173,7 @@ router.post("/login", async (req, res) => {
         profilePicture: true,
         coverPhoto: true,
         bio: true,
-      }
+      },
     });
 
     if (!user) {
