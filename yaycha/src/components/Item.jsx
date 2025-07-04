@@ -21,6 +21,19 @@ import CommentButton from "./CommentButton";
 
 import { formatRelative, isValid } from "date-fns";
 
+const api = import.meta.env.VITE_API;
+
+// Helper function to get the correct image URL
+const getImageUrl = (imageField) => {
+  if (!imageField) return null;
+  // Check if it's an external URL (starts with http/https)
+  if (imageField.startsWith("http")) {
+    return imageField;
+  }
+  // Otherwise, it's a local file
+  return `${api}/uploads/${imageField}`;
+};
+
 export default function Item({ item, remove, primary, comment }) {
   const navigate = useNavigate();
   const { auth } = useApp();
@@ -31,6 +44,8 @@ export default function Item({ item, remove, primary, comment }) {
     const date = new Date(dateString);
     return isValid(date) ? formatRelative(date, new Date()) : "Invalid date";
   };
+
+  const profilePictureUrl = getImageUrl(item.user?.profilePicture);
 
   return (
     <Card
@@ -100,6 +115,8 @@ export default function Item({ item, remove, primary, comment }) {
             }}
           >
             <Avatar
+              src={profilePictureUrl}
+              alt={item.user?.name || "User"}
               sx={{
                 width: 40,
                 height: 40,

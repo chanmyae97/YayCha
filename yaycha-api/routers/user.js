@@ -4,6 +4,43 @@ const prisma = require("../prismaClient");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { auth } = require("../middlewares/auth");
+const multer = require("multer");
+const path = require("path");
+const fs = require('fs').promises;
+
+// Helper function to check if URL is external
+const isExternalUrl = (url) => {
+  try {
+    return new URL(url).protocol.startsWith('http');
+  } catch {
+    return false;
+  }
+};
+
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const filename = `${file.fieldname}-${Date.now()}${ext}`;
+    cb(null, filename);
+  },
+});
+
+const upload = multer({ storage });
+
+// Helper function to delete old file
+const deleteOldFile = async (filename) => {
+  if (!filename || isExternalUrl(filename)) return;
+  
+  try {
+    const filePath = path.join('uploads', filename);
+    await fs.unlink(filePath);
+    console.log(`Successfully deleted old file: ${filename}`);
+  } catch (error) {
+    // If file doesn't exist or other error, just log it
+    console.error(`Error deleting file ${filename}:`, error.message);
+  }
+};
 
 // Authentication middleware
 // const authenticateToken = (req, res, next) => {
@@ -22,6 +59,81 @@ const { auth } = require("../middlewares/auth");
 //     next();
 //   });
 // };
+
+router.post("/users/:id/upload", auth, upload.single("file"), async (req,res) =>{
+  const {id} = req.params;
+  const user = res.locals.user;
+  if(user.id !== Number(id)){
+    return res.status(403).json({msg: "Unauthorized"});
+  }
+
+  const file = req.file;
+  if(!file){
+    return res.status(400).json({msg: "No file uploaded"});
+  }
+
+  try {
+    // Get the current user data to find the old profile picture
+    const currentUser = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      select: { profilePicture: true }
+    });
+
+    // Only delete if it's a local file
+    if (currentUser?.profilePicture && !isExternalUrl(currentUser.profilePicture)) {
+      await deleteOldFile(currentUser.profilePicture);
+    }
+
+    const data = await prisma.user.update({
+      where: {id: Number(id)},
+      data: {
+        profilePicture: file.filename,
+      },
+    });
+    res.json(data);
+  } catch (error) {
+    await deleteOldFile(file.filename);
+    console.error("Error uploading file:", error);
+    res.status(500).json({ msg: "Error uploading file" });
+  }
+});
+
+router.post("/users/:id/upload-cover", auth, upload.single("file"), async (req,res) =>{
+  const {id} = req.params;
+  const user = res.locals.user;
+  if(user.id !== Number(id)){
+    return res.status(403).json({msg: "Unauthorized"});
+  }
+  const file = req.file;
+  if(!file){
+    return res.status(400).json({msg: "No file uploaded"});
+  }
+
+  try {
+    // Get the current user data to find the old cover photo
+    const currentUser = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      select: { coverPhoto: true }
+    });
+
+    // Only delete if it's a local file
+    if (currentUser?.coverPhoto && !isExternalUrl(currentUser.coverPhoto)) {
+      await deleteOldFile(currentUser.coverPhoto);
+    }
+
+    const data = await prisma.user.update({
+      where: {id: Number(id)},
+      data: {
+        coverPhoto: file.filename,
+      },
+    });
+    res.json(data); 
+  } catch (error) {
+    await deleteOldFile(file.filename);
+    console.error("Error uploading file:", error);
+    res.status(500).json({ msg: "Error uploading file" });
+  }
+});
 
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
@@ -73,10 +185,10 @@ router.get("/users/:id", auth, async (req, res) => {
             likes: true,
             comments: {
               include: {
-                likes: true
-              }
-            }
-          }
+                likes: true,
+              },
+            },
+          },
         },
         comments: true,
         followers: true,
@@ -95,11 +207,11 @@ router.get("/users/:id", auth, async (req, res) => {
   }
 });
 
-router.get("/search",async (req,res) =>{
-  const {q} = req.query;
+router.get("/search", async (req, res) => {
+  const { q } = req.query;
 
   const data = await prisma.user.findMany({
-    where:{
+    where: {
       name: {
         contains: q,
       },
@@ -112,7 +224,7 @@ router.get("/search",async (req,res) =>{
   });
 
   res.json(data);
-})
+});
 
 router.post("/users", async (req, res) => {
   try {

@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const prisma = new PrismaClient();
 
 // Avatar service base URL for profile pictures
-const AVATAR_BASE_URL = "https://avatar-placeholder.iran.liara.run/public";
+const AVATAR_BASE_URL = "https://avatar.iran.liara.run/public";
 // Picsum base URL for cover photos
 const COVER_BASE_URL = "https://picsum.photos";
 
