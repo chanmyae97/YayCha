@@ -24,6 +24,19 @@ import {
 
 import { useApp } from "../ThemedApp";
 
+const api = import.meta.env.VITE_API;
+
+// Helper function to get the correct image URL
+const getImageUrl = (imageField) => {
+  if (!imageField) return null;
+  // Check if it's an external URL (starts with http/https)
+  if (imageField.startsWith("http")) {
+    return imageField;
+  }
+  // Otherwise, it's a local file
+  return `${api}/uploads/${imageField}`;
+};
+
 export default function AppDrawer() {
   const { showDrawer, setShowDrawer, auth, setAuth } = useApp();
   const navigate = useNavigate();
@@ -40,6 +53,9 @@ export default function AppDrawer() {
     navigate("/");
     setShowDrawer(false);
   };
+
+  const profilePictureUrl = getImageUrl(auth?.profilePicture);
+  const coverPhotoUrl = getImageUrl(auth?.coverPhoto);
 
   return (
     <Drawer
@@ -60,10 +76,11 @@ export default function AppDrawer() {
           width: 320,
           height: 180,
           position: "relative",
-          background:
-            theme.palette.mode === "light"
-              ? "linear-gradient(135deg, #2196F3 0%, #21CBF3 100%)"
-              : "linear-gradient(135deg, #FE6B8B 0%, #FF8E53 100%)",
+          background: coverPhotoUrl
+            ? `url(${coverPhotoUrl}) center/cover no-repeat`
+            : theme.palette.mode === "light"
+            ? "linear-gradient(135deg, #2196F3 0%, #21CBF3 100%)"
+            : "linear-gradient(135deg, #FE6B8B 0%, #FF8E53 100%)",
           overflow: "hidden",
           "&::before": {
             content: '""',
@@ -72,8 +89,9 @@ export default function AppDrawer() {
             left: 0,
             right: 0,
             bottom: 0,
-            background:
-              "radial-gradient(circle at top right, rgba(255,255,255,0.2) 0%, transparent 70%)",
+            background: coverPhotoUrl
+              ? "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6))"
+              : "radial-gradient(circle at top right, rgba(255,255,255,0.2) 0%, transparent 70%)",
           },
         }}
       >
@@ -89,6 +107,8 @@ export default function AppDrawer() {
           }}
         >
           <Avatar
+            src={profilePictureUrl}
+            alt={auth ? auth.name : "Guest"}
             sx={{
               width: 80,
               height: 80,

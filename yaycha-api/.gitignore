@@ -6,3 +6,14 @@ node_modules
 prisma/dev.db
 /prisma/*.db
 /prisma/**/*.db
+
+# Ignore uploaded files
+/uploads/
+uploads/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.mp4
+*.mov
+*.avi
